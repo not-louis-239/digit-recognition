@@ -12,6 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+RESET = "\033[0m"
+BOLD = "\033[1m"
+FAINT = "\033[2m"
+ITALIC = "\033[3m"
+UNDERLINE = "\033[4m"
+BLINK = "\033[5m"
 
 def col(code: int) -> str:
     return f"\033[38;5;{code}m"

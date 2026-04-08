@@ -14,7 +14,7 @@
 
 from dataclasses import dataclass
 
-from digit_recognition.utils.colours import col
+from digit_recognition.utils.colours import col, RESET, BOLD
 
 @dataclass
 class Season:
@@ -22,8 +22,23 @@ class Season:
     colour: str
 
 SEASONS: list[Season] = [
-    Season("Spring", "Green"),
-    Season("Summer", "Yellow"),
-    Season("Autumn", "Red"),
-    Season("Winter", "Blue")
+    Season("Spring", col(118)),
+    Season("Summer", col(220)),
+    Season("Autumn", col(209)),
+    Season("Winter", col(153))
 ]
+
+def format_year(generation: int) -> str:
+    season_idx = generation % len(SEASONS)
+
+    season = SEASONS[season_idx]
+    year = generation // len(SEASONS)
+
+    return f"{BOLD}{season.colour}{season.name}{RESET}, Year {BOLD}{year}{RESET}"
+
+def _test():
+    for gen in range(8):
+        print(format_year(gen))
+
+if __name__ == "__main__":
+    _test()
