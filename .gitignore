@@ -1,8 +1,8 @@
 workflow/
-scripts/
 
 __pycache__/
 *.pyc
 
 .venv
 *.env
+*.envrc
