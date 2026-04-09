@@ -4,16 +4,18 @@ from pathlib import Path
 import pygame as pg
 import sys
 import json
+from pygame import Surface
 
 from digit_recognition.digit_recogniser.digit_recogniser import DigitRecogniser
 from digit_recognition.digit_recogniser.simulation import Simulation
 from digit_recognition.digit_recogniser.image_manager import load_imgs_from_csv
 from digit_recognition.gui.states import StateID, State
 from digit_recognition.gui.states.main_state import MainState
+from digit_recognition.gui.states.sim_state import SimState
+from digit_recognition.gui.states.gallery_state import GalleryState
 from digit_recognition.gui.utils.input_manager import InputManager
-from digit_recognition.utils.dirs import DIRS
-
-FPS = 60
+from digit_recognition.gui.utils.asset_manager import Assets
+from digit_recognition.utils.constants import WN_W, WN_H, FPS
 
 class App:
     def __init__(self) -> None:
@@ -48,11 +50,18 @@ class App:
 
         pg.init()  # MUST be before any pygame steps or else they will fail
         self.input_manager = InputManager()
-        self.images = load_imgs_from_csv((DIRS.assets.training_data / "digits.csv").path())
+        self.assets = Assets()
 
         self.states: dict[StateID, State] = {
-            StateID.MAIN: MainState()
+            StateID.MAIN: MainState(self.assets),
+            StateID.SIM: SimState(self.assets),
+            StateID.GALLERY: GalleryState(self.assets)
         }
+        self.state = StateID.MAIN
+
+    def enter_state(self, state: StateID) -> None:
+        self.state = state
+        self.states[self.state].reset()
 
     def update(self) -> None:
         ...
@@ -60,11 +69,11 @@ class App:
     def take_input(self) -> None:
         ...
 
-    def draw(self, wn) -> None:
-        wn.fill((255, 255, 255))
+    def draw(self, wn: Surface) -> None:
+        self.states[self.state].draw(wn)
 
     def run(self):
-        wn = pg.display.set_mode((1250, 750))
+        wn = pg.display.set_mode((WN_W, WN_H))
         pg.display.set_caption("Digit Recognition Evolution Simulator")
 
         pg.mixer.set_num_channels(32)
@@ -81,6 +90,7 @@ class App:
             self.update()
             self.take_input()
             self.draw(wn)
+            pg.display.flip()
 
             # Update input
             dt_s = clock.tick(FPS) / 1000

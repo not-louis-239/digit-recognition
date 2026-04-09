@@ -1,14 +1,14 @@
 import pygame as pg
 from pygame import Surface
 
-from ...utils.custom_types import Colour
+from ...utils.custom_types import Colour, FontProfile
 from .text_utils import draw_text
 
 class Button:
     def __init__(
             self, x: int, y: int, w: float, h: float,
             bg_colour: Colour, fg_colour: Colour,
-            text: str, font_size: int, font: pg.font.Font
+            text: str, font_profile: FontProfile
         ) -> None:
         self.x = x
         self.y = y
@@ -19,8 +19,7 @@ class Button:
         self.fg_colour = fg_colour
 
         self.text = text
-        self.font_size = font_size
-        self.font = font
+        self.font_profile = font_profile
 
     def contains(self, point: tuple[float, float]) -> bool:
         px, py = point
@@ -43,5 +42,5 @@ class Button:
             surface=surface, pos=(self.x, self.y),
             horiz_align='centre', vert_align='centre',
             text=self.text, colour=self.fg_colour,
-            font_size=self.font_size, font_family=self.font
+            font_profile=self.font_profile
         )

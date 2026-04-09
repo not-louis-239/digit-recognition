@@ -1,36 +1,42 @@
-import pygame as pg
-from pygame import Surface
 from typing import Literal
 from pathlib import Path
+from functools import lru_cache
+
+import pygame as pg
+from pygame import Surface
+
 from ...utils.custom_types import Colour, AColour
 
-_FONT_OBJECT_CACHE: dict[tuple[str | None, int], pg.font.Font] = {}
+_FONT_OBJECT_CACHE: dict[tuple[Path | None, int], pg.font.Font] = {}
+def _get_font(path: Path | None, size: int) -> pg.font.Font:
+    if (path, size) not in _FONT_OBJECT_CACHE:
+        if path is None:
+            font_obj = pg.font.Font(None, size)
+        else:
+            font_obj = pg.font.Font(str(path), size)
+        _FONT_OBJECT_CACHE[(path, size)] = font_obj
+    return _FONT_OBJECT_CACHE[(path, size)]
+
+@lru_cache(maxsize=500)
+def _get_rendered_text(text: str, colour: tuple[int, int, int], path: Path, size: int, rotation: int) -> pg.Surface:
+    font_obj = _get_font(path, size)
+    img = font_obj.render(text, True, colour)
+    if rotation != 0:
+        img = pg.transform.rotate(img, rotation)
+    return img
 
 def draw_text(
         surface: Surface, pos: tuple[int, int],
         horiz_align: Literal['left', 'centre', 'right'],
         vert_align: Literal['top', 'centre', 'bottom'],
         text: str, colour: Colour | AColour,
-        font_size: int, font_family: pg.font.Font | Path | str | None = None,
-        rotation: float = 0
+        font_profile: tuple[Path | None, int],
+        rotation: int = 0
     ) -> None:
-    if isinstance(font_family, pg.font.Font):
-        font_obj = font_family
-    else:
-        font_obj_profile = (str(font_family) if font_family is not None else None, font_size)
+    # We explicitly ban float values for rotation as it hinders the ability of the cache
+    # to improve performance.
 
-        # Caching font objects avoid expensive recreation of font objects
-        # every time we want to draw some text
-        if font_obj_profile not in _FONT_OBJECT_CACHE:
-            font_obj = pg.font.Font(font_obj_profile[0], font_obj_profile[1])
-            _FONT_OBJECT_CACHE[font_obj_profile] = font_obj
-        else:
-            font_obj = _FONT_OBJECT_CACHE[font_obj_profile]
-
-    img = font_obj.render(text, True, colour)
-    if rotation != 0:
-        img = pg.transform.rotate(img, rotation)
-
+    img = _get_rendered_text(text, colour, *font_profile, rotation)
     rect = img.get_rect()
 
     # Horizontal
