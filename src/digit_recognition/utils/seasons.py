@@ -15,30 +15,26 @@
 from dataclasses import dataclass
 
 from digit_recognition.utils.colours import col, RESET, BOLD, FAINT
+from digit_recognition.utils.custom_types import Colour
 
 @dataclass
 class Season:
     name: str
-    colour: str
+    colour: Colour
 
 SEASONS: list[Season] = [
-    Season("Spring", col(112)),
-    Season("Summer", col(220)),
-    Season("Autumn", col(209)),
-    Season("Winter", col(153))
+    Season("Spring", (100, 255, 100)),
+    Season("Summer", (255, 220, 100)),
+    Season("Autumn", (255, 140, 100)),
+    Season("Winter", (100, 100, 255))
 ]
 
-def format_year(generation: int) -> str:
+def format_year(generation: int) -> tuple[int, Season]:
+    """Returns (year, season)"""
+
     season_idx = generation % len(SEASONS)
 
     season = SEASONS[season_idx]
     year = generation // len(SEASONS)
 
-    return f"{BOLD}{season.colour}{season.name}{RESET}, Year {BOLD}{col(13)}{year}{RESET} {FAINT}(Generation {generation}){RESET}"
-
-def _test():
-    for gen in range(8):
-        print(format_year(gen))
-
-if __name__ == "__main__":
-    _test()
+    return (year, season)

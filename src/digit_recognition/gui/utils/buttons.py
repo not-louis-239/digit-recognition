@@ -12,14 +12,12 @@ DEFAULT_BUTTON_FONT_FAMILY = (DIRS.assets.fonts / "SourceCodePro-Medium.ttf").pa
 
 class Button:
     def __init__(
-            self, x: int, y: int, w: float, h: float, text: str,
+            self, pos: tuple[int, int], size: tuple[int, int], text: str,
             bg_colour: Colour = DEFAULT_BUTTON_BG_COLOUR, fg_colour: Colour = DEFAULT_BUTTON_FG_COLOUR,
             font_profile: FontProfile = (DEFAULT_BUTTON_FONT_FAMILY, DEFAULT_BUTTON_FONT_SIZE)
         ) -> None:
-        self.x = x
-        self.y = y
-        self.w = w
-        self.h = h
+        self.x, self.y = size
+        self.w, self.h = size
 
         self.bg_colour = bg_colour
         self.fg_colour = fg_colour

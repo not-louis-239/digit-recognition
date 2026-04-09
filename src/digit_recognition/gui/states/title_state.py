@@ -15,7 +15,7 @@ class TitleState(State):
     def __init__(self, assets: Assets) -> None:
         self.assets = assets
 
-        self.start_button = Button(WN_W // 2 - 100, WN_H // 2 - 50, 200, 100, "Start")
+        self.start_button = Button((WN_W // 2 - 100, WN_H // 2 - 50), (200, 100), "Start")
 
     def reset(self) -> None:
         pass

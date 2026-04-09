@@ -54,7 +54,7 @@ class App:
 
         self.states: dict[StateID, State] = {
             StateID.MAIN: TitleState(self.assets),
-            StateID.SIM: SimState(self.assets),
+            StateID.SIM: SimState(self.assets, self.sim),
             StateID.GALLERY: GalleryState(self.assets)
         }
         self.state = StateID.MAIN
