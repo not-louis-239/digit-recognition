@@ -17,7 +17,7 @@ class TitleState(State):
 
         self.start_button = Button(
             WN_W // 2 - 100, WN_H // 2 - 50, 200, 100,
-            (100, 100, 200), (140, 140, 255), "Start", (self.assets.font_monospaced, 36)
+            (75, 75, 125), (140, 140, 255), "Start", (self.assets.font_monospaced, 36)
         )
 
     def reset(self) -> None:
@@ -35,8 +35,10 @@ class TitleState(State):
         wn.fill((30, 30, 30))
 
         draw_text(
-            surface=wn, pos=(WN_W // 2, WN_H // 2), horiz_align='centre', vert_align='centre',
+            surface=wn, pos=(WN_W // 2, 200), horiz_align='centre', vert_align='centre',
             text="Digit Recognition Evolution Simulator", colour=(255, 255, 255), font_profile=(self.assets.font_monospaced, 48)
         )
+
+        self.start_button.draw(wn)
 
 

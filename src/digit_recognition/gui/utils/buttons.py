@@ -39,7 +39,7 @@ class Button:
     def draw(self, surface: Surface) -> None:
         pg.draw.rect(surface, self.bg_colour, (self.x, self.y, self.w, self.h))
         draw_text(
-            surface=surface, pos=(self.x, self.y),
+            surface=surface, pos=(int(self.x + self.w / 2), int(self.y + self.h / 2)),
             horiz_align='centre', vert_align='centre',
             text=self.text, colour=self.fg_colour,
             font_profile=self.font_profile
