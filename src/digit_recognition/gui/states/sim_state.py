@@ -6,7 +6,7 @@ from digit_recognition.gui.utils.text_utils import draw_text
 from digit_recognition.gui.utils.asset_manager import Assets
 from digit_recognition.gui.utils.buttons import Button
 from digit_recognition.gui.utils.input_manager import InputManager
-from digit_recognition.gui.states import State, StateChangeRequest
+from digit_recognition.gui.states import State, StateChangeRequest, StateID
 from digit_recognition.utils.seasons import format_year
 
 if TYPE_CHECKING:
@@ -20,6 +20,8 @@ class SimState(State):
         self.sim_running: bool = False
         self.sim = sim
 
+        self.return_button = Button((self.padding, WN_H - 100 - self.padding), (200, 100), "Return")
+
     def reset(self) -> None:
         ...
 
@@ -28,6 +30,9 @@ class SimState(State):
             self.sim.run_generation(self.assets.training_data)
 
     def take_input(self, input_manager: InputManager) -> StateChangeRequest:
+        if self.return_button.check_click(input_manager.events):
+            return StateChangeRequest(new=StateID.TITLE)
+
         if self.run_button.check_click(input_manager.events):
             self.sim_running = not self.sim_running
 
@@ -37,6 +42,7 @@ class SimState(State):
         wn.fill((30, 30, 30))
 
         self.run_button.draw(wn)
+        self.return_button.draw(wn)
 
         if self.sim_running:
             text = "Sim: Running"

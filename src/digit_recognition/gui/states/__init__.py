@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from ...gui.utils.asset_manager import Assets
 
 class StateID(StrEnum):
-    MAIN = auto()
+    TITLE = auto()
     SIM = auto()
     GALLERY = auto()
 

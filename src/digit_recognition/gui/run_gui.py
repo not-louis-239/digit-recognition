@@ -53,11 +53,11 @@ class App:
         self.assets = Assets()
 
         self.states: dict[StateID, State] = {
-            StateID.MAIN: TitleState(self.assets),
+            StateID.TITLE: TitleState(self.assets),
             StateID.SIM: SimState(self.assets, self.sim),
             StateID.GALLERY: GalleryState(self.assets)
         }
-        self.state = StateID.MAIN
+        self.state = StateID.TITLE
 
     def enter_state(self, state: StateID) -> None:
         self.state = state
