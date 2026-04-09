@@ -18,4 +18,4 @@ class SimState(State):
         return StateChangeRequest()
 
     def draw(self, wn: Surface) -> None:
-        ...
+        wn.fill((30, 30, 30))

@@ -3,12 +3,18 @@ from pygame import Surface
 
 from ...utils.custom_types import Colour, FontProfile
 from .text_utils import draw_text
+from ...utils.dirs import DIRS
+
+DEFAULT_BUTTON_FG_COLOUR = (140, 140, 255)
+DEFAULT_BUTTON_BG_COLOUR = (75, 75, 125)
+DEFAULT_BUTTON_FONT_SIZE = 36
+DEFAULT_BUTTON_FONT_FAMILY = (DIRS.assets.fonts / "SourceCodePro-Medium.ttf").path()
 
 class Button:
     def __init__(
-            self, x: int, y: int, w: float, h: float,
-            bg_colour: Colour, fg_colour: Colour,
-            text: str, font_profile: FontProfile
+            self, x: int, y: int, w: float, h: float, text: str,
+            bg_colour: Colour = DEFAULT_BUTTON_BG_COLOUR, fg_colour: Colour = DEFAULT_BUTTON_FG_COLOUR,
+            font_profile: FontProfile = (DEFAULT_BUTTON_FONT_FAMILY, DEFAULT_BUTTON_FONT_SIZE)
         ) -> None:
         self.x = x
         self.y = y
