@@ -149,7 +149,7 @@ class GalleryApp:
             notif_surf = self.font.render(self.notif_text, True, ACCENT_COLOR)
             self.screen.blit(notif_surf, (20, 585))
 
-        mode_str = "[DRAWING MODE]" if self.is_drawing_mode else f"[VIEWING: {self.idx+1}/{len(self.data)}]"
+        mode_str = "[DRAWING]" if self.is_drawing_mode else f"[VIEWING: {self.idx+1}/{len(self.data)}]"
         texts = [
             f"Mode: {mode_str} | Active Digit: {label}",
             "SPACE: Toggle Draw | B: Toggle Balance | C: Clean | S: Save",
@@ -180,7 +180,11 @@ class GalleryApp:
                     # RESTORED: Number key detection for the active digit label
                     if pg.K_0 <= event.key <= pg.K_9:
                         self.new_label = event.key - pg.K_0
-                        if not self.is_drawing_mode:
+                        if not self.is_drawing_mode and self.data:
+                            # In viewing mode, hot-swap the label of the current item
+                            self.data[self.idx][0] = self.new_label
+                            self.set_notif(f"Label changed to {self.new_label} for current image")
+                        elif not self.is_drawing_mode:
                             self.set_notif(f"Label set to {self.new_label} (Enter Draw Mode to use)")
 
                     if self.is_drawing_mode and event.key == pg.K_RETURN:
