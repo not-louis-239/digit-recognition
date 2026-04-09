@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Copyright 2026 Louis Masarei-Boulton
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,8 +23,10 @@ from pathlib import Path
 # must be before any `from digit_recognition.*` imports can take place
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
+from digit_recognition.gui.run_gui import main as run_gui
+
 def main():
-    pass
+    run_gui()
 
 if __name__ == "__main__":
     main()
