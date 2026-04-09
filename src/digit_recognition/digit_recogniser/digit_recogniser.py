@@ -21,18 +21,6 @@ def sigmoid(x: np.ndarray) -> np.ndarray:
     # NumPy's exp handles entire arrays at once
     return 1 / (1 + np.exp(-x))
 
-def calculate_loss(correct: np.ndarray, actual: np.ndarray) -> float:
-    """
-    Calculates Categorical Cross-Entropy loss.
-    correct: One-hot encoded labels (e.g., [0, 0, 1, 0...])
-    actual: Predicted probabilities from Softmax layer
-    """
-    # Clip values to avoid log(0) errors
-    actual = np.clip(actual, 1e-15, 1 - 1e-15)
-
-    # Formula: -Sum(correct_label * log(predicted_probability))
-    return -np.sum(correct * np.log(actual))
-
 class Layer:
     def __init__(self, input_size: int, output_size: int) -> None:
         """Initialise a Layer with a random configuration."""

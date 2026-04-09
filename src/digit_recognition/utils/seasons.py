@@ -26,7 +26,7 @@ SEASONS: list[Season] = [
     Season("Spring", (100, 255, 100)),
     Season("Summer", (255, 220, 100)),
     Season("Autumn", (255, 140, 100)),
-    Season("Winter", (100, 100, 255))
+    Season("Winter", (200, 200, 255))
 ]
 
 def format_year(generation: int) -> tuple[int, Season]:

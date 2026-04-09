@@ -41,9 +41,11 @@ class SimState(State):
     def draw(self, wn: Surface) -> None:
         wn.fill((30, 30, 30))
 
+        # Draw buttons
         self.run_button.draw(wn)
         self.return_button.draw(wn)
 
+        # Show running status
         if self.sim_running:
             text = "Sim: Running"
             colour = (100, 255, 100)
@@ -56,8 +58,29 @@ class SimState(State):
             text=text, colour=colour, font_profile=(self.assets.monospaced_reg, 36)
         )
 
+        # Show results from last generation
+        if self.sim.last_evals:
+            best = self.sim.last_evals[0]
+            draw_text(
+                surface=wn, pos=(WN_W - self.padding, self.padding + 185), horiz_align='right', vert_align='top',
+                text=f"Best Loss: {best.loss:.4f}", colour=(220, 220, 220),
+                font_profile=(self.assets.monospaced_reg, 24)
+            )
+            draw_text(
+                surface=wn, pos=(WN_W - self.padding, self.padding + 220), horiz_align='right', vert_align='top',
+                text=f"Best Acc: {best.accuracy_rate:.2%}", colour=(220, 220, 220),
+                font_profile=(self.assets.monospaced_reg, 24)
+            )
+        else:
+            draw_text(
+                surface=wn, pos=(WN_W - self.padding, self.padding + 185), horiz_align='right', vert_align='top',
+                text="Press Run to start the simulation.", colour=(220, 220, 220),
+                font_profile=(self.assets.monospaced_reg, 24)
+            )
+
         year, season = format_year(self.sim.epoch)
 
+        # Show season, year and generation
         draw_text(
             surface=wn, pos=(self.padding, self.padding), horiz_align='left', vert_align='top',
             text=f"{season.name}", colour=season.colour, font_profile=(self.assets.monospaced_reg, 36)
@@ -65,4 +88,8 @@ class SimState(State):
         draw_text(
             surface=wn, pos=(self.padding, self.padding + 60), horiz_align='left', vert_align='top',
             text=f"Year {year}", colour=(255, 255, 255), font_profile=(self.assets.monospaced_reg, 24)
+        )
+        draw_text(
+            surface=wn, pos=(self.padding, self.padding + 90), horiz_align='left', vert_align='top',
+            text=f"Generation {self.sim.epoch}", colour=(150, 150, 150), font_profile=(self.assets.monospaced_reg, 24)
         )

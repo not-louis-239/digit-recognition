@@ -5,7 +5,7 @@ from ...utils.custom_types import Colour, FontProfile
 from .text_utils import draw_text
 from ...utils.dirs import DIRS
 
-DEFAULT_BUTTON_FG_COLOUR = (140, 140, 255)
+DEFAULT_BUTTON_FG_COLOUR = (190, 190, 255)
 DEFAULT_BUTTON_BG_COLOUR = (75, 75, 125)
 DEFAULT_BUTTON_FONT_SIZE = 36
 DEFAULT_BUTTON_FONT_FAMILY = (DIRS.assets.fonts / "SourceCodePro-Medium.ttf").path()

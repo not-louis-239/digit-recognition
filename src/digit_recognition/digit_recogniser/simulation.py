@@ -19,9 +19,14 @@ import random
 import json
 
 import numpy as np
-from .digit_recogniser import DigitRecogniser, calculate_loss
+from .digit_recogniser import DigitRecogniser
 from ..utils.constants import POPULATION_SIZE
 from ..utils.custom_types import TrainingDataType
+
+def calculate_loss(correct: np.ndarray, actual: np.ndarray) -> float:
+    """Calculate the Mean Squared Error"""
+    assert correct.shape == actual.shape
+    return np.mean((correct - actual) ** 2, dtype=np.float64)
 
 @dataclass
 class Evaluation:
