@@ -1,47 +1,73 @@
-import csv
-import shutil
+import numpy as np
 from pathlib import Path
 
-from ..utils.custom_types import ImageArray
+from digit_recognition.utils.dirs import DIRS
 from ..utils.constants import IMAGE_SIZE
 
-def save_imgs_to_csv(data: list, path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
+# arrays must be of size (IMAGE_SIZE, IMAGE_SIZE), with an attached label for the correct digit
+_TrainingDataType = list[tuple[np.ndarray, int]]
 
-    if path.exists():
-        shutil.copyfile(path, str(path) + ".bak")
-
-    with open(path, "w") as f:
-        for label, grid in data:
-            flattened = [f"{pixel:.2f}" for row in grid for pixel in row]
-            f.write(f"{label}," + ",".join(flattened) + "\n")
-
-def load_imgs_from_csv(csv_file: Path) -> list[tuple[ImageArray, int]]:
-    """Loads all images from a CSV file into an iterable of arrays."""
-    if not csv_file.exists():
-        print(f"Warning: {csv_file} not found.")
+def load_imgs_from_npy(data_path: Path) -> _TrainingDataType:
+    if not data_path.exists():
         return []
 
-    images: list[tuple[ImageArray, int]] = []
+    raw = np.load(data_path)
 
-    with open(csv_file, "r") as f:
-        # Using csv reader is more robust than manual string splitting
-        reader = csv.reader(f)
-        for row in reader:
-            if not row:
-                continue
+    expected_cols = 1 + IMAGE_SIZE * IMAGE_SIZE
+    if raw.ndim != 2 or raw.shape[1] != expected_cols:
+        raise ValueError(f"Invalid data shape: {raw.shape}")
 
-            # label is the first item, pixels are the rest
-            label = int(row[0])
+    labels = raw[:, 0].astype(int)
+    images = raw[:, 1:].reshape(-1, IMAGE_SIZE, IMAGE_SIZE)
 
-            # Convert strings to floats
-            pixels = [float(p) for p in row[1:]]
+    return list(zip(images, labels))
 
-            # Reshape 1D list into 2D ImageArray (28x28)
-            image_2d = []
-            for i in range(0, len(pixels), IMAGE_SIZE):
-                image_2d.append(pixels[i : i + IMAGE_SIZE])
+def save_imgs_to_npy(data_path: Path, data: _TrainingDataType) -> None:
+    if not data:
+        return
 
-            images.append((image_2d, label))
+    images = np.array([img for img, _ in data], dtype=np.float32)
+    labels = np.array([label for _, label in data], dtype=np.float32)
 
-    return images
+    if images.ndim != 3 or images.shape[1:] != (IMAGE_SIZE, IMAGE_SIZE):
+        raise ValueError(f"Invalid image shape: {images.shape}")
+
+    flat_images = images.reshape(len(images), -1)
+    final_array = np.concatenate((labels[:, None], flat_images), axis=1)
+
+    data_path.parent.mkdir(parents=True, exist_ok=True)
+    np.save(data_path, final_array)
+
+def _test():
+    import matplotlib.pyplot as _plt
+    import random as _r
+
+    data = load_imgs_from_npy((DIRS.assets.training_data / "digits.npy").path())
+
+    if not data:
+        print("No data found")
+        return
+
+    _plt.ion()  # interactive mode ON
+
+    fig, ax = _plt.subplots()
+    img_artist = None
+
+    try:
+        while True:
+            img, label = data[_r.randint(0, len(data) - 1)]
+
+            ax.set_title(str(label))
+
+            if img_artist is None:
+                img_artist = ax.imshow(img, cmap="gray")
+            else:
+                img_artist.set_data(img)
+
+            _plt.pause(0.2)
+
+    except KeyboardInterrupt:
+        _plt.close(fig)
+
+if __name__ == "__main__":
+    _test()

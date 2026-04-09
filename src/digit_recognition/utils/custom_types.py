@@ -1,6 +1,7 @@
 from typing import TypeAlias
 from pathlib import Path
 
+# XXX: ImageArray is deprecated as it is performance-poor and should be replaced with np.ndarray
 ImageArray: TypeAlias = list[list[float]]
 
 Colour: TypeAlias = tuple[int, int, int]
