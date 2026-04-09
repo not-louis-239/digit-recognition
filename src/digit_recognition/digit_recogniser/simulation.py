@@ -37,6 +37,7 @@ class Simulation:
         it treats the seed as the starting population."""
 
         self.population: list[DigitRecogniser] = []
+        self.last_evals: list[Evaluation] = []  # makes results accessible to GUI elements
 
         if seed is not None:
             # Load the population from the seed
@@ -109,6 +110,7 @@ class Simulation:
 
         # Sort by loss (lowest is best!)
         results.sort(key=lambda entry: entry.loss)
+        self.last_evals = results
 
         best_eval: Evaluation = results[0]
         print(f"Generation Best Loss: {best_eval.loss:.4f} | Best Acc: {best_eval.accuracy_rate:.4%}")
