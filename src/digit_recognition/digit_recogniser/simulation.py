@@ -20,7 +20,6 @@ import json
 
 import numpy as np
 from .digit_recogniser import DigitRecogniser, calculate_loss
-from ..utils.custom_types import ImageArray
 from ..utils.constants import POPULATION_SIZE
 
 @dataclass
@@ -62,7 +61,7 @@ class Simulation:
             self.population.append(DigitRecogniser())
             self.epoch: int = 0
 
-    def evaluate_model(self, model: DigitRecogniser, data: list[tuple[ImageArray, int]]) -> tuple[float, float]:
+    def evaluate_model(self, model: DigitRecogniser, data: list[tuple[np.ndarray, int]]) -> tuple[float, float]:
         """Returns tuple of (average_loss, accuracy_rate), where 0 <= accuracy_rate <= 1."""
 
         total_loss: float = 0.0
@@ -90,7 +89,7 @@ class Simulation:
 
         return (average_loss, accuracy_rate)
 
-    def run_generation(self, training_data: list[tuple[ImageArray, int]]) -> None:
+    def run_generation(self, training_data: list[tuple[np.ndarray, int]]) -> None:
         """
         Run a generation.
         Eliminate all but the best individuals, then have the best

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from enum import StrEnum, auto
 from typing import TYPE_CHECKING
+from dataclasses import dataclass
 
 from pygame import Surface
 
@@ -14,6 +15,10 @@ class StateID(StrEnum):
     SIM = auto()
     GALLERY = auto()
 
+@dataclass(kw_only=True, frozen=True)
+class StateChangeRequest:
+    new: StateID | None = None
+
 class State(ABC):
     def __init__(self, assets: Assets):
         self.assets = assets
@@ -23,11 +28,11 @@ class State(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def update(self) -> None:
+    def update(self, dt_s: float) -> None:
         raise NotImplementedError
 
     @abstractmethod
-    def take_input(self, input_manager: InputManager) -> None:
+    def take_input(self, input_manager: InputManager) -> StateChangeRequest:
         raise NotImplementedError
 
     @abstractmethod

@@ -13,12 +13,9 @@
 # limitations under the License.
 
 from typing import Any
-from pathlib import Path
 import numpy as np
-import json
 
 from ..utils.constants import STARTING_MUTATION_RATE, NEW_CONFIG_RANGE
-from ..utils.custom_types import ImageArray
 
 def sigmoid(x: np.ndarray) -> np.ndarray:
     # NumPy's exp handles entire arrays at once
@@ -139,9 +136,9 @@ class DigitRecogniser:
 
         return new_model
 
-    def predict(self, image_array: np.ndarray | ImageArray) -> np.ndarray:
+    def predict(self, image_array: np.ndarray) -> np.ndarray:
         # Ensure input is a column vector (784, 1)
-        out = np.array(image_array).flatten().reshape(-1, 1)
+        out = image_array.flatten().reshape(-1, 1)
 
         # Pass input through each one of the layers
         for layer in self.layers:

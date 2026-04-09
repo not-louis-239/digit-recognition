@@ -8,9 +8,9 @@ from pygame import Surface
 
 from digit_recognition.digit_recogniser.digit_recogniser import DigitRecogniser
 from digit_recognition.digit_recogniser.simulation import Simulation
-from digit_recognition.digit_recogniser.image_manager import load_imgs_from_csv
+from digit_recognition.digit_recogniser.image_manager import load_imgs_from_npy
 from digit_recognition.gui.states import StateID, State
-from digit_recognition.gui.states.main_state import MainState
+from digit_recognition.gui.states.title_state import TitleState
 from digit_recognition.gui.states.sim_state import SimState
 from digit_recognition.gui.states.gallery_state import GalleryState
 from digit_recognition.gui.utils.input_manager import InputManager
@@ -53,7 +53,7 @@ class App:
         self.assets = Assets()
 
         self.states: dict[StateID, State] = {
-            StateID.MAIN: MainState(self.assets),
+            StateID.MAIN: TitleState(self.assets),
             StateID.SIM: SimState(self.assets),
             StateID.GALLERY: GalleryState(self.assets)
         }
@@ -63,11 +63,13 @@ class App:
         self.state = state
         self.states[self.state].reset()
 
-    def update(self) -> None:
-        ...
+    def update(self, dt_s: float) -> None:
+        self.states[self.state].update(dt_s)
 
     def take_input(self) -> None:
-        ...
+        state_change_request = self.states[self.state].take_input(self.input_manager)
+        if state_change_request.new is not None:
+            self.enter_state(state_change_request.new)
 
     def draw(self, wn: Surface) -> None:
         self.states[self.state].draw(wn)
@@ -87,7 +89,7 @@ class App:
                     running = False
 
             # Update
-            self.update()
+            self.update(self.input_manager.dt_s)
             self.take_input()
             self.draw(wn)
             pg.display.flip()

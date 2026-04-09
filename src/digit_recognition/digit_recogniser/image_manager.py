@@ -2,12 +2,10 @@ import numpy as np
 from pathlib import Path
 
 from digit_recognition.utils.dirs import DIRS
+from digit_recognition.utils.custom_types import TrainingDataType
 from ..utils.constants import IMAGE_SIZE
 
-# arrays must be of size (IMAGE_SIZE, IMAGE_SIZE), with an attached label for the correct digit
-_TrainingDataType = list[tuple[np.ndarray, int]]
-
-def load_imgs_from_npy(data_path: Path) -> _TrainingDataType:
+def load_imgs_from_npy(data_path: Path) -> TrainingDataType:
     if not data_path.exists():
         return []
 
@@ -22,7 +20,7 @@ def load_imgs_from_npy(data_path: Path) -> _TrainingDataType:
 
     return list(zip(images, labels))
 
-def save_imgs_to_npy(data_path: Path, data: _TrainingDataType) -> None:
+def save_imgs_to_npy(data_path: Path, data: TrainingDataType) -> None:
     if not data:
         return
 
