@@ -8,8 +8,9 @@ class _Dirs:
     # Top-level, stable project directories
     if TYPE_CHECKING:
         assets: _Dirs
-        lib: _Dirs
-        screensavers: _Dirs
+        src: _Dirs
+        helpers: _Dirs
+        generated_models: _Dirs
 
     def __init__(self, root: Path) -> None:
         self._root = root

@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TypeAlias, Any
+from typing import Any
 from pathlib import Path
 import numpy as np
 import json
 
-from ..utils.constants import STARTING_MUTATION_RATE
+from ..utils.constants import STARTING_MUTATION_RATE, NEW_CONFIG_RANGE
 from ..utils.custom_types import ImageArray
 
 def sigmoid(x: np.ndarray) -> np.ndarray:
@@ -25,29 +25,57 @@ def sigmoid(x: np.ndarray) -> np.ndarray:
     return 1 / (1 + np.exp(-x))
 
 def calculate_loss(correct: np.ndarray, actual: np.ndarray) -> float:
-    """Uses NumPy to calculate the Mean Squared Error (Sum of Squares)."""
-    # (correct - actual)**2 handles the subtraction and squaring for the whole array
-    return np.sum((correct - actual) ** 2)
+    """
+    Calculates Categorical Cross-Entropy loss.
+    correct: One-hot encoded labels (e.g., [0, 0, 1, 0...])
+    actual: Predicted probabilities from Softmax layer
+    """
+    # Clip values to avoid log(0) errors
+    actual = np.clip(actual, 1e-15, 1 - 1e-15)
+
+    # Formula: -Sum(correct_label * log(predicted_probability))
+    return -np.sum(correct * np.log(actual))
 
 class Layer:
-    def __init__(self, input_size, output_size):
+    def __init__(self, input_size: int, output_size: int) -> None:
+        """Initialise a Layer with a random configuration."""
         # We initialize all weights for the whole layer at once
         # Using "He Initialization" (scaling by sqrt of input size) helps stability
-        self.weights = np.random.uniform(-1, 1, (output_size, input_size))
-        self.bias = np.random.uniform(-1, 1, (output_size, 1))
+        self.weights = np.random.uniform(-NEW_CONFIG_RANGE, NEW_CONFIG_RANGE, (output_size, input_size))
+        self.bias = np.random.uniform(-NEW_CONFIG_RANGE, NEW_CONFIG_RANGE, (output_size, 1))
 
-    def forward(self, inputs):
+    def shape(self) -> tuple[int, int]:
+        """Returns the layer's shape in terms of (in, out)"""
+        return self.weights.shape
+
+    def forward(self, inputs: np.ndarray) -> np.ndarray:
+        """Process inputs and return outputs dependent on oneself's contents."""
         # inputs: (input_size, 1)
         # weight matrix multiplication + bias
         return sigmoid(np.dot(self.weights, inputs) + self.bias)
 
     def mutate(self, rate=STARTING_MUTATION_RATE):
+        """Generate a slightly different version of oneself."""
         # Mutate the entire matrix at once using a mask
         self.weights += np.random.uniform(-rate, rate, self.weights.shape)
         self.bias += np.random.uniform(-rate, rate, self.bias.shape)
 
+    def copy(self) -> Layer:
+        """Create a new Layer instance that is exactly the same as this one."""
+
+        # Create a blank instance without running __init__
+        new = Layer.__new__(Layer)
+
+        # Use NumPy's .copy() to ensure we aren't just pointing to the same memory
+        # If we didn't use .copy(), mutating the child would also change the parent!
+        new.weights = self.weights.copy()
+        new.bias = self.bias.copy()
+
+        return new
+
 class DigitRecogniser:
-    def __init__(self):
+    def __init__(self, epoch: int = 0):
+        """Creates a new DigitRecogniser with a random configuration"""
         # 784 -> 16 -> 16 -> 10
         self.layers = [
             Layer(784, 16),
@@ -55,10 +83,10 @@ class DigitRecogniser:
             Layer(16, 10)
         ]
 
+        self.epoch = epoch  # purely cosmetic, but nice to keep track of
+
     def to_json(self) -> dict[str, Any]:
-        """
-        Convert the model's layers into a JSON-serializable dictionary.
-        """
+        """Convert the model's layers into a JSON-serializable dictionary."""
         serializable_layers = []
         for layer in self.layers:
             serializable_layers.append({
@@ -69,18 +97,14 @@ class DigitRecogniser:
         return {
             "layers": serializable_layers,
             "metadata": {
-                "num_hidden_layers": len(self.layers) - 1,
-                "neurons_per_layer": len(self.layers[0].weights)
+                "architecture": [l.shape()[0] for l in self.layers] + [self.layers[-1].shape()[1]],
+                "epoch": self.epoch
             }
         }
 
     @classmethod
-    def from_json(cls, path: Path) -> DigitRecogniser:
-        """
-        Load a model from a JSON file.
-        """
-        with open(path, "r") as f:
-            data = json.load(f)
+    def from_json(cls, data: dict[str, Any]) -> DigitRecogniser:
+        """Load a model from a JSON-style object."""
 
         # Create instance without calling __init__ (prevents random weight gen)
         model = cls.__new__(cls)
@@ -94,38 +118,47 @@ class DigitRecogniser:
             new_layer.bias = np.array(layer_data["bias"])
             model.layers.append(new_layer)
 
+        model.epoch = data["metadata"]["epoch"]
+
         return model
 
     def copy(self) -> DigitRecogniser:
         """
         Creates a brand new DigitRecogniser instance with the exact
-        same weights and biases as this one.
+        same weights, biases and metadata as this one.
         """
         # Create a "blank" instance
-        # Using __new__ avoids running the random initialization in __init__
+        # Using __new__ avoids running the random initialisation in __init__
         new_model = DigitRecogniser.__new__(DigitRecogniser)
 
         # Deep copy the layers list
-        new_model.layers = []
-        for layer in self.layers:
-            # Create a new Layer object
-            new_layer = Layer.__new__(Layer)
+        new_model.layers = [layer.copy() for layer in self.layers]
 
-            # Use NumPy's .copy() to duplicate the actual weight data
-            new_layer.weights = layer.weights.copy()
-            new_layer.bias = layer.bias.copy()
-
-            new_model.layers.append(new_layer)
+        # Copy metadata
+        new_model.epoch = self.epoch
 
         return new_model
 
-    def predict(self, image_array: np.ndarray | ImageArray):
+    def predict(self, image_array: np.ndarray | ImageArray) -> np.ndarray:
         # Ensure input is a column vector (784, 1)
         out = np.array(image_array).flatten().reshape(-1, 1)
+
+        # Pass input through each one of the layers
         for layer in self.layers:
             out = layer.forward(out)
         return out
 
-    def mutate(self):
+    def mutate(self) -> None:
+        """Change one's configuration slightly"""
         for layer in self.layers:
             layer.mutate()
+
+    def spawn_child(self, current_epoch: int) -> DigitRecogniser:
+        """Return a slightly mutated version of oneself.
+        Basically "asexual reproduction" in a sense."""
+
+        child = self.copy()
+        child.mutate()
+        child.epoch = current_epoch
+
+        return child

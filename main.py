@@ -18,6 +18,7 @@ from pathlib import Path
 
 # allow Python to resolve imports from the src/ directory
 # this is a sort of "hacky" solution, but it works, so who cares?
+# must be before any `from digit_recognition.*` imports can take place
 sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
 def main():

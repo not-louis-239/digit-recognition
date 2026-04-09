@@ -12,119 +12,105 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
+from dataclasses import dataclass
+from typing import Any
 import random
-import json
-import csv
 
 import numpy as np
 from .digit_recogniser import DigitRecogniser, calculate_loss
 from ..utils.custom_types import ImageArray
-from ..utils.constants import POPULATION_SIZE, IMAGE_SIZE
+from ..utils.constants import POPULATION_SIZE
+
+@dataclass
+class Evaluation:
+    loss: float
+    accuracy_rate: float
+    model: DigitRecogniser
 
 class Simulation:
-    def __init__(self, seed: Path | None = None) -> None:
+    def __init__(self, seed: dict[str, Any] | None = None) -> None:
         self.population: list[DigitRecogniser] = []
-        if not seed:
-            for _ in range(POPULATION_SIZE):
-                self.population.append(DigitRecogniser())
-        else:
+
+        if seed is not None:
             new = DigitRecogniser.from_json(seed)
             for _ in range(POPULATION_SIZE):
                 new_model = new.copy()
                 new_model.mutate()  # inject some initial genetic diversity
                 self.population.append(new_model)
+            self.epoch = new_model.epoch
+            return
 
-    def evaluate_model(self, model: DigitRecogniser, data: list[tuple[ImageArray, int]]) -> float:
-        total_loss = 0.0
-        for image, label in data:
-            # Create a 10x1 column of zeros
-            correct = np.zeros((10, 1))
-            # Set the correct index to 1.0
-            correct[label] = 1.0
+        for _ in range(POPULATION_SIZE):
+            self.population.append(DigitRecogniser())
+            self.epoch = 0
 
-            prediction = model.predict(image)
+    def evaluate_model(self, model: DigitRecogniser, data: list[tuple[ImageArray, int]]) -> tuple[float, float]:
+        """Returns tuple of (average_loss, accuracy_rate), where 0 <= accuracy_rate <= 1."""
 
-            # Now both are NumPy arrays of shape (10, 1)
-            total_loss += calculate_loss(correct, prediction)
+        total_loss: float = 0.0
+        correct_guesses: int = 0
+        total_samples: int = len(data)
 
-        return total_loss / len(data)
+        for image, correct_num in data:
+            # Prepare Ground Truth (One-Hot Encoding)
+            correct_one_hot = np.zeros((10, 1))
+            correct_one_hot[correct_num] = 1.0
+
+            # Get Prediction
+            prediction = model.predict(image) # Returns (10, 1) array of probabilities
+
+            # Calculate Loss for this specific image
+            total_loss += calculate_loss(correct_one_hot, prediction)
+
+            # Check Accuracy
+            # np.argmax finds the index of the highest value (the model's "choice")
+            if np.argmax(prediction) == correct_num:
+                correct_guesses += 1
+
+        average_loss = total_loss / total_samples
+        accuracy_rate = correct_guesses / total_samples
+
+        return (average_loss, accuracy_rate)
 
     def run_generation(self, training_data: list[tuple[ImageArray, int]]) -> None:
         """
         Run a generation.
-        Eliminate the worst individuals.
-        Mutate the best individuals.
+        Eliminate all but the best individuals, then have the best
+        individuals make offspring for the next generation.
 
         The strong shall eat the weak, as it is said.
         """
 
         # Calculate fitness for everyone
         # We store them as (loss, model) tuples so we can sort them
-        scored_population = []
+        results: list[Evaluation] = []
         for model in self.population:
-            loss = self.evaluate_model(model, training_data)
-            scored_population.append((loss, model))
+            loss, accuracy_rate = self.evaluate_model(model, training_data)
+            results.append(Evaluation(loss=loss, accuracy_rate=accuracy_rate, model=model))
 
         # Sort by loss (lowest is best!)
-        scored_population.sort(key=lambda x: x[0])
+        results.sort(key=lambda entry: entry.loss)
 
-        print(f"Generation Best Loss: {scored_population[0][0]:.4f}")
+        best_eval: Evaluation = results[0]
+        print(f"Generation Best Loss: {best_eval.loss:.4f} | Best Acc: {best_eval.accuracy_rate:.4%}")
 
         # Selection: Keep the top 10%. The rest? Goodbye.
         num_elites = max(1, POPULATION_SIZE // 10)
-        elites = [pair[1] for pair in scored_population[:num_elites]]
+        elites: list[DigitRecogniser] = [e.model for e in results[:num_elites]]
 
         # Repopulation: Fill the rest of the slots with mutated clones
-        new_generation = [e for e in elites]
+        new_generation = elites.copy()
 
         while len(new_generation) < POPULATION_SIZE:
-            # Pick a random winner from the elites
+            # Pick a random winner from the elites and have it make an offspring
             parent = random.choice(elites)
-            child = parent.copy()
-            child.mutate()
-            new_generation.append(child)
+            new_generation.append(parent.spawn_child(self.epoch + 1))
 
         self.population = new_generation
 
-    def save_best_model(self, path: Path = Path(__file__).parent / "best_model.json"):
-        """Save the best model to a JSON file."""
-        # Assuming run_generation was just called, population[0] is the best
-        best_model = self.population[0]
+        self.epoch += 1
 
-        with open(path, "w") as f:
-            json.dump(best_model.to_json(), f, indent=4)
-
-        print(f"\033[95m[System]: The Great Library has archived the model to '{path}'\033[0m")
-
-def load_images(file: Path) -> list[tuple[ImageArray, int]]:
-    """Loads all images from a text file into an iterable of arrays."""
-    dataset: list[tuple[ImageArray, int]] = []
-
-    if not file.exists():
-        print(f"Warning: {file} not found.")
-        return dataset
-
-    with open(file, "r") as f:
-        # Using csv reader is more robust than manual string splitting
-        reader = csv.reader(f)
-        for row in reader:
-            if not row:
-                continue
-
-            # label is the first item, pixels are the rest
-            label = int(row[0])
-
-            # Convert strings to floats
-            # If your Pygame script saves 0/1, these are already normalized.
-            # If using MNIST CSV (0-255), use: [float(p) / 255.0 for p in row[1:]]
-            pixels = [float(p) for p in row[1:]]
-
-            # Reshape 1D list into 2D ImageArray (28x28)
-            image_2d = []
-            for i in range(0, len(pixels), IMAGE_SIZE):
-                image_2d.append(pixels[i : i + IMAGE_SIZE])
-
-            dataset.append((image_2d, label))
-
-    return dataset
+    def get_best_model(self) -> DigitRecogniser:
+        """Get the best model from the simulation."""
+        # Assuming run_generation was just called, population[0] is the best (lowest loss)
+        return self.population[0]
