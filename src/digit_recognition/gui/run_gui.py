@@ -8,6 +8,8 @@ import json
 from digit_recognition.digit_recogniser.digit_recogniser import DigitRecogniser
 from digit_recognition.digit_recogniser.simulation import Simulation
 from digit_recognition.digit_recogniser.load_images import load_images
+from digit_recognition.gui.states import StateID, State
+from digit_recognition.gui.states.main_state import MainState
 from digit_recognition.gui.utils.input_manager import InputManager
 from digit_recognition.utils.dirs import DIRS
 
@@ -49,6 +51,10 @@ class App:
         pg.init()  # MUST be before any pygame steps or else they will fail
         self.input_manager = InputManager()
         self.images = load_images((DIRS.assets.training_data / "digits.csv").path())
+
+        self.states: dict[StateID, State] = {
+            StateID.MAIN: MainState()
+        }
 
     def update(self) -> None:
         ...
