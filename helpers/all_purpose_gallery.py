@@ -15,9 +15,12 @@ Features:
 * make new images directly in the gallery
 """
 
+# XXX: this module is deprecated and will soon be merged into the main program
+
 import pygame as pg
 import csv
 import sys
+import shutil
 import math
 import time
 from pathlib import Path
@@ -54,7 +57,11 @@ def load_imgs_from_csv(path: Path) -> list[list]:
     return data
 
 def save_imgs_to_csv(data: list, path: Path) -> None:
-    if not path.parent.exists(): path.parent.mkdir(parents=True)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    if path.exists():
+        shutil.copyfile(path, path.with_suffix(".bak"))
+
     with open(path, "w") as f:
         for label, grid in data:
             flattened = [f"{pixel:.2f}" for row in grid for pixel in row]

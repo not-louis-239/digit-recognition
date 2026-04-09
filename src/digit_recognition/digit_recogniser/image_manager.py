@@ -1,10 +1,22 @@
 import csv
+import shutil
 from pathlib import Path
 
 from ..utils.custom_types import ImageArray
 from ..utils.constants import IMAGE_SIZE
 
-def load_images(csv_file: Path) -> list[tuple[ImageArray, int]]:
+def save_imgs_to_csv(data: list, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    if path.exists():
+        shutil.copyfile(path, str(path) + ".bak")
+
+    with open(path, "w") as f:
+        for label, grid in data:
+            flattened = [f"{pixel:.2f}" for row in grid for pixel in row]
+            f.write(f"{label}," + ",".join(flattened) + "\n")
+
+def load_imgs_from_csv(csv_file: Path) -> list[tuple[ImageArray, int]]:
     """Loads all images from a CSV file into an iterable of arrays."""
     if not csv_file.exists():
         print(f"Warning: {csv_file} not found.")

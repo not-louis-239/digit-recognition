@@ -6,3 +6,6 @@ __pycache__/
 .venv
 *.env
 *.envrc
+
+.DS_Store
+Thumbs.db

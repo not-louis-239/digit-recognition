@@ -7,7 +7,7 @@ import json
 
 from digit_recognition.digit_recogniser.digit_recogniser import DigitRecogniser
 from digit_recognition.digit_recogniser.simulation import Simulation
-from digit_recognition.digit_recogniser.load_images import load_images
+from digit_recognition.digit_recogniser.image_manager import load_imgs_from_csv
 from digit_recognition.gui.states import StateID, State
 from digit_recognition.gui.states.main_state import MainState
 from digit_recognition.gui.utils.input_manager import InputManager
@@ -17,8 +17,6 @@ FPS = 60
 
 class App:
     def __init__(self) -> None:
-        DIRS.generated_models.path().mkdir(parents=True, exist_ok=True)
-
         print("Enter a seed model (JSON) from which to start the simulation (or Enter to start fresh)")
 
         while True:
@@ -50,7 +48,7 @@ class App:
 
         pg.init()  # MUST be before any pygame steps or else they will fail
         self.input_manager = InputManager()
-        self.images = load_images((DIRS.assets.training_data / "digits.csv").path())
+        self.images = load_imgs_from_csv((DIRS.assets.training_data / "digits.csv").path())
 
         self.states: dict[StateID, State] = {
             StateID.MAIN: MainState()

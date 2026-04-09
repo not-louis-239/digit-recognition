@@ -10,7 +10,7 @@ class _Dirs:
         assets: _Dirs
         src: _Dirs
         helpers: _Dirs
-        generated_models: _Dirs
+        incubator: _Dirs  # standardised place to save generated models
 
     def __init__(self, root: Path) -> None:
         self._root = root

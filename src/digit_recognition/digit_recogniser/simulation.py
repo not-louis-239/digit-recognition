@@ -13,8 +13,10 @@
 # limitations under the License.
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 import random
+import json
 
 import numpy as np
 from .digit_recogniser import DigitRecogniser, calculate_loss
@@ -28,21 +30,37 @@ class Evaluation:
     model: DigitRecogniser
 
 class Simulation:
-    def __init__(self, seed: dict[str, Any] | None = None) -> None:
+    def __init__(self, seed: list[dict[str, Any]] | None = None) -> None:
+        """If called with no seed, initialises a fresh population.
+        If called with a seed (list of raw dictionaries for models),
+        it treats the seed as the starting population."""
+
         self.population: list[DigitRecogniser] = []
 
         if seed is not None:
-            new = DigitRecogniser.from_json(seed)
-            for _ in range(POPULATION_SIZE):
-                new_model = new.copy()
-                new_model.mutate()  # inject some initial genetic diversity
-                self.population.append(new_model)
-            self.epoch = new_model.epoch
+            # Load the population from the seed
+            seed_population: list[DigitRecogniser] = []
+            for model_data in seed:
+                seed_population.append(DigitRecogniser.from_json(model_data))
+
+            # Initialise the population as containing all members of the seed
+            self.population = seed_population[:]
+
+            # For any empty spots, choose a random model from the seed population to fill it up
+            self.epoch: int = self.population[0].epoch
+            while len(self.population) < POPULATION_SIZE:
+                model = random.choice(seed_population)
+                self.population.append(model)
+
+                # Assume the epoch of the 'latest' descendant
+                if model.epoch > self.epoch:
+                    self.epoch = model.epoch
+
             return
 
         for _ in range(POPULATION_SIZE):
             self.population.append(DigitRecogniser())
-            self.epoch = 0
+            self.epoch: int = 0
 
     def evaluate_model(self, model: DigitRecogniser, data: list[tuple[ImageArray, int]]) -> tuple[float, float]:
         """Returns tuple of (average_loss, accuracy_rate), where 0 <= accuracy_rate <= 1."""
@@ -110,7 +128,43 @@ class Simulation:
 
         self.epoch += 1
 
-    def get_best_model(self) -> DigitRecogniser:
-        """Get the best model from the simulation."""
+    def get_best_models(self, n: int, /) -> list[DigitRecogniser]:
+        """Get the `n` best model from the simulation."""
         # Assuming run_generation was just called, population[0] is the best (lowest loss)
-        return self.population[0]
+        return self.population[:n]
+
+def load_from_dir(dir_path: Path) -> list[DigitRecogniser]:
+    models = []
+
+    if not dir_path.exists():
+        print(f"No such directory: {dir_path}")
+        return models
+    if not dir_path.is_dir():
+        print(f"Path is not a directory: {dir_path}")
+        return models
+
+    for file in dir_path.rglob("*.json"):
+        try:
+            with open(file, "r") as f:
+                model_data = json.load(f)
+        except json.JSONDecodeError:
+            print(f"Warning: skipping corrupted JSON in file: '{file}'")
+            continue
+
+        model = DigitRecogniser.from_json(model_data)
+        models.append(model)
+
+    return models
+
+def save_to_dir(dir_path: Path, data: list[Evaluation]) -> None:
+    # Using list[Evaluation] so that can generate filenames based on model performance
+
+    epoch = max(ev.model.epoch for ev in data)
+    data.sort(key=lambda ev: ev.loss)  # lowest loss first
+
+    for rank, ev in enumerate(data, start=1):
+        filename = f"epoch_{epoch}_rank_{rank}_loss_{ev.loss:.4f}.json"
+        model_data = ev.model.to_json()
+
+        with open(dir_path / filename, "w") as f:
+            json.dump(model_data, f, indent=4)
