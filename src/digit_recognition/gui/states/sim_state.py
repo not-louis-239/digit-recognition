@@ -15,7 +15,8 @@ if TYPE_CHECKING:
 class SimState(State):
     def __init__(self, assets: Assets, sim: Simulation):
         super().__init__(assets)
-        self.run_button = Button((WN_W - 250, 50), (200, 100), "Run")
+        self.padding = 30
+        self.run_button = Button((WN_W - 200 - self.padding, self.padding), (200, 80), "Run")
         self.sim_running: bool = False
         self.sim = sim
 
@@ -45,17 +46,17 @@ class SimState(State):
             colour = (255, 100, 100)
 
         draw_text(
-            surface=wn, pos=(WN_W - 250, 300), horiz_align='left', vert_align='centre',
+            surface=wn, pos=(WN_W - self.padding, self.padding + 110), horiz_align='right', vert_align='top',
             text=text, colour=colour, font_profile=(self.assets.monospaced_reg, 36)
         )
 
         year, season = format_year(self.sim.epoch)
 
         draw_text(
-            surface=wn, pos=(50, 150), horiz_align='left', vert_align='centre',
+            surface=wn, pos=(self.padding, self.padding), horiz_align='left', vert_align='top',
             text=f"{season.name}", colour=season.colour, font_profile=(self.assets.monospaced_reg, 36)
         )
         draw_text(
-            surface=wn, pos=(50, 250), horiz_align='left', vert_align='centre',
-            text=f"Year {self.sim.epoch}", colour=(255, 255, 255), font_profile=(self.assets.monospaced_reg, 24)
+            surface=wn, pos=(self.padding, self.padding + 60), horiz_align='left', vert_align='top',
+            text=f"Year {year}", colour=(255, 255, 255), font_profile=(self.assets.monospaced_reg, 24)
         )

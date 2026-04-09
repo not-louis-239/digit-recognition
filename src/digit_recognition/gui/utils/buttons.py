@@ -16,7 +16,7 @@ class Button:
             bg_colour: Colour = DEFAULT_BUTTON_BG_COLOUR, fg_colour: Colour = DEFAULT_BUTTON_FG_COLOUR,
             font_profile: FontProfile = (DEFAULT_BUTTON_FONT_FAMILY, DEFAULT_BUTTON_FONT_SIZE)
         ) -> None:
-        self.x, self.y = size
+        self.x, self.y = pos
         self.w, self.h = size
 
         self.bg_colour = bg_colour
