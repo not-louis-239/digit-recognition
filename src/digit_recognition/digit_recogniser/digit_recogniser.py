@@ -14,10 +14,15 @@
 
 from typing import Any, TypedDict
 from warnings import deprecated
+import torch
+import torch.nn as nn
 import numpy as np
 
 from ..utils import chance
-from ..utils.constants import NEW_CONFIG_RANGE, IMAGE_SIZE, LOGIT_GAIN, SCALE_MUTATION_FACTOR, SCALE_MUTATION_CHANCE, NEURONS_PER_HIDDEN_LAYER
+from ..utils.constants import IMAGE_SIZE, LOGIT_GAIN, SCALE_MUTATION_FACTOR, SCALE_MUTATION_CHANCE, NEURONS_PER_HIDDEN_LAYER
+
+# Set device
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def leaky_relu(x: np.ndarray) -> np.ndarray:
     return np.where(x > 0, x, 0.01 * x)
@@ -39,18 +44,21 @@ class Layer:
         """Initialise a Layer with a random configuration."""
         # We initialize all weights for the whole layer at once
         # Using "He Initialization" (scaling by sqrt of input size) helps stability
-        self.weights = np.random.uniform(-NEW_CONFIG_RANGE, NEW_CONFIG_RANGE, (output_size, input_size))
-        self.bias = np.random.uniform(-NEW_CONFIG_RANGE, NEW_CONFIG_RANGE, (output_size, 1))
+        self.weights = torch.randn(output_size, input_size) * np.sqrt(2.0 / input_size)
+        self.bias = torch.zeros(output_size, 1)
+        # Move to device
+        self.weights = self.weights.to(device)
+        self.bias = self.bias.to(device)
 
     def shape(self) -> tuple[int, int]:
         """Returns the layer's shape in terms of (out, in)"""
         return self.weights.shape
 
-    def forward(self, inputs: np.ndarray) -> np.ndarray:
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         """Process inputs and return outputs dependent on oneself's contents."""
-        # inputs: (input_size, 1)
+        # inputs: (input_size, batch_size)
         # weight matrix multiplication + bias
-        return leaky_relu(np.dot(self.weights, inputs) + self.bias)
+        return torch.matmul(self.weights, inputs) + self.bias
 
     def intensify(self, scalar: float) -> None:
         """Scale all weights by a scalar. This can be used for hypermutants,
@@ -61,8 +69,8 @@ class Layer:
     def mutate(self, rate: float):
         """Generate a slightly different version of oneself."""
         # Mutate the entire matrix at once using a mask
-        self.weights += np.random.uniform(-rate, rate, self.weights.shape)
-        self.bias += np.random.uniform(-rate, rate, self.bias.shape)
+        self.weights += torch.randn_like(self.weights) * rate
+        self.bias += torch.randn_like(self.bias) * rate
 
     def copy(self) -> Layer:
         """Create a new Layer instance that is exactly the same as this one."""
@@ -70,10 +78,10 @@ class Layer:
         # Create a blank instance without running __init__
         new = Layer.__new__(Layer)
 
-        # Use NumPy's .copy() to ensure we aren't just pointing to the same memory
-        # If we didn't use .copy(), mutating the child would also change the parent!
-        new.weights = self.weights.copy()
-        new.bias = self.bias.copy()
+        # Use torch's .clone() to ensure we aren't just pointing to the same memory
+        # If we didn't use .clone(), mutating the child would also change the parent!
+        new.weights = self.weights.clone()
+        new.bias = self.bias.clone()
 
         return new
 
@@ -103,7 +111,7 @@ class DigitRecogniser:
         serializable_layers = []
         for layer in self.layers:
             serializable_layers.append({
-                "weights": layer.weights.tolist(), # Convert NumPy array to list
+                "weights": layer.weights.tolist(), # Convert torch tensor to list
                 "bias": layer.bias.tolist()
             })
 
@@ -128,8 +136,8 @@ class DigitRecogniser:
             # Create a blank Layer object
             # Note: We assume the Layer class is defined or we create a dummy
             new_layer = Layer.__new__(Layer)
-            new_layer.weights = np.array(layer_data["weights"])
-            new_layer.bias = np.array(layer_data["bias"])
+            new_layer.weights = torch.tensor(layer_data["weights"]).to(device)
+            new_layer.bias = torch.tensor(layer_data["bias"]).to(device)
             model.layers.append(new_layer)
 
         # Metadata
@@ -161,27 +169,31 @@ class DigitRecogniser:
         for the test mode, where you can give a model an image and have it predict it."""
 
         # Ensure input is a column vector (784, 1)
-        out = image_array.flatten().reshape(-1, 1)
+        out = torch.from_numpy(image_array.flatten()).float().unsqueeze(1).to(device)  # (784, 1)
 
         # Pass input through each one of the layers
         for i, layer in enumerate(self.layers):
             out = layer.forward(out)
-            if i == len(self.layers) - 1:
-                out = softmax(out * LOGIT_GAIN)
-        return out
+            if i < len(self.layers) - 1:
+                out = torch.where(out > 0, out, 0.01 * out)  # Leaky ReLU
+            else:
+                out = torch.softmax(out * LOGIT_GAIN, dim=0)
+        return out.squeeze(1).detach().cpu().numpy()
 
     def predict_batch(self, image_arrays: np.ndarray) -> np.ndarray:
         """Predict multiple images at once. This improves performance as
         prediction is vectorised."""
 
         # images shape: (N, 28, 28) or (N, 784)
-        X = image_arrays.reshape(image_arrays.shape[0], -1).T  # (784, N)
+        X = torch.from_numpy(image_arrays.reshape(image_arrays.shape[0], -1).T).float().to(device)  # (784, N)
         out = X
         for i, layer in enumerate(self.layers):
-            out = layer.weights @ out + layer.bias  # Linear
+            out = layer.forward(out)  # Linear
             if i < len(self.layers) - 1:
-                out = leaky_relu(out)  # ReLU for hidden layers
-        return softmax(out * LOGIT_GAIN)  # (10, N)
+                out = torch.where(out > 0, out, 0.01 * out)  # Leaky ReLU
+        # Apply softmax
+        out = torch.softmax(out * LOGIT_GAIN, dim=0)
+        return out.detach().cpu().numpy()  # (10, N)
 
     def mutate(self, rate: float) -> None:
         """Change one's configuration slightly"""

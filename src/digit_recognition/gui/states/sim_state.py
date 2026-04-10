@@ -125,7 +125,8 @@ class SimState(State):
                     gap = 3
 
                     pg.draw.rect(surface=wn, color=(0, 0, 0), rect=(WN_W - diagnostic_margin_x + text_to_bar_padding, entry_y + gap, bar_graph_size, 18 - gap))
-                    pg.draw.rect(surface=wn, color=colour, rect=(WN_W - diagnostic_margin_x + text_to_bar_padding, entry_y + gap, bar_graph_size * preds[i], 18 - gap))
+                    bar_width = int(clamp(preds[i], (0.0, 1.0)) * bar_graph_size)
+                    pg.draw.rect(surface=wn, color=colour, rect=(WN_W - diagnostic_margin_x + text_to_bar_padding, entry_y + gap, bar_width, 18 - gap))
 
                     # Draw text
                     draw_text(
