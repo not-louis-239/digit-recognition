@@ -1,4 +1,4 @@
-from typing import NoReturn
+from typing import NoReturn, Any
 from pathlib import Path
 
 import pygame as pg
@@ -19,7 +19,7 @@ from digit_recognition.utils.constants import WN_W, WN_H, FPS
 
 class App:
     def __init__(self) -> None:
-        print("Enter a seed model (JSON) from which to start the simulation (or Enter to start fresh)")
+        print("Enter a seed JSON file or directory to start the simulation (or Enter to start fresh)")
 
         while True:
             seed_path_str = input("> ").strip()
@@ -31,24 +31,49 @@ class App:
             seed_path = Path(seed_path_str)
 
             if not seed_path.exists():
-                print(f"Error: No such file.")
-                continue
-
-            if not seed_path.is_file():
-                print(f"Error: Not a file.")
+                print("Error: No such file or directory.")
                 continue
 
             try:
+                if seed_path.is_dir():
+                    seed: list[dict[str, Any]] = []
+                    json_files = sorted(seed_path.rglob("*.json"))
+                    if not json_files:
+                        print("Error: Directory contains no JSON files.")
+                        continue
+
+                    for file in json_files:
+                        try:
+                            with open(file, "r") as f:
+                                data = json.load(f)
+                            if isinstance(data, list):
+                                seed.extend(data)
+                            else:
+                                seed.append(data)
+                        except json.JSONDecodeError:
+                            print(f"Warning: skipping corrupted JSON in file: '{file}'")
+                    if not seed:
+                        print("Error: No valid JSON models found in directory.")
+                        continue
+
+                    self.sim = Simulation(seed)
+                    break
+
+                if not seed_path.is_file():
+                    print("Error: Path is not a file.")
+                    continue
+
                 with open(seed_path, "r") as f:
-                    seed = json.load(f)
+                    data = json.load(f)
+                    seed = data if isinstance(data, list) else [data]
                     self.sim = Simulation(seed)
                     break
             except json.JSONDecodeError:
-                print(f"Error: JSON file is corrupted.")
+                print("Error: JSON file is corrupted.")
             except Exception as e:
                 print(f"Error: {e} ({type(e).__name__})")
 
-        pg.init()  # MUST be before any pygame steps or else they will fail
+        pg.init()  # MUST be before any pygame steps or else such steps will fail
         self.input_manager = InputManager()
         self.assets = Assets()
 

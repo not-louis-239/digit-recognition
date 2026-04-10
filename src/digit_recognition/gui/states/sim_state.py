@@ -15,11 +15,15 @@ class SimState(State):
         super().__init__(assets)
         self.padding = 30
         self.sim_running: bool = False
+        self.autosave: bool = False
+        self.autosave_interval: int = 50  # autosave when epoch % self.autosave_interval = 0
         self.sim = sim
 
         self.run_button = Button((WN_W - 200 - self.padding, self.padding), (200, 80), "Run")
         self.return_button = Button((self.padding, WN_H - 100 - self.padding), (200, 100), "Return")
         self.save_button = Button((2 * self.padding + 200, WN_H - 100 - self.padding), (300, 100), "Save Models")
+        self.autosave_button = Button((3 * self.padding + 500, WN_H - 100 - self.padding), (300, 100), "Autosave")
+
         self.notifs = AmbientMessage()
 
     def reset(self) -> None:
@@ -30,6 +34,10 @@ class SimState(State):
 
         if self.sim_running:
             self.sim.run_generation(self.assets.training_data)
+
+            if (self.autosave) and (self.sim.last_evals) and (self.sim.epoch % self.autosave_interval == 0):
+                self.notifs.set_msg(text=f"Epoch {self.sim.epoch} saved (Autosave)", colour=(100, 255, 100), lifetime_s=1.5)
+                save_to_dir(self.sim.last_evals[:10])
 
     def take_input(self, input_manager: InputManager) -> StateChangeRequest:
         if self.return_button.check_click(input_manager.events):
@@ -46,6 +54,14 @@ class SimState(State):
                 # No data to save
                 self.notifs.set_msg(text="No data to save. Press Run to start simulation first!", colour=(255, 100, 100), lifetime_s=2)
 
+        if self.autosave_button.check_click(input_manager.events):
+            self.autosave = not self.autosave
+            self.autosave_button.text = f"Autosave: {'On' if self.autosave else 'Off'}"
+            if self.autosave:
+                self.notifs.set_msg(text=f"Autosave enabled (every {self.autosave_interval} epochs).", colour=(100, 255, 100), lifetime_s=2)
+            else:
+                self.notifs.set_msg(text="Autosave disabled.", colour=(255, 200, 100), lifetime_s=2)
+
         return StateChangeRequest()
 
     def draw(self, wn: Surface) -> None:
@@ -55,6 +71,7 @@ class SimState(State):
         self.run_button.draw(wn)
         self.return_button.draw(wn)
         self.save_button.draw(wn)
+        self.autosave_button.draw(wn)
 
         # Show running status
         if self.sim_running:
@@ -103,6 +120,12 @@ class SimState(State):
         draw_text(
             surface=wn, pos=(self.padding, self.padding + 90), horiz_align='left', vert_align='top',
             text=f"Generation {self.sim.epoch}", colour=(150, 150, 150), font_profile=(self.assets.monospaced_reg, 24)
+        )
+
+        autosave_colour = (100, 255, 100) if self.autosave else (255, 100, 100)
+        draw_text(
+            surface=wn, pos=(self.padding, self.padding + 140), horiz_align='left', vert_align='top',
+            text=f"Autosave: {"On" if self.autosave else "Off"}", colour=autosave_colour, font_profile=(self.assets.monospaced_reg, 24)
         )
 
         # Show notification popups

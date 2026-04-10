@@ -169,11 +169,15 @@ def save_to_dir(data: list[Evaluation], dir_path: Path = DIRS.incubator.path()) 
     # Using list[Evaluation] so that can generate filenames based on model performance
 
     epoch = max(ev.model.epoch for ev in data)
+
+    BASE_DIR = dir_path / f"epoch_{epoch:08d}"
+    BASE_DIR.mkdir(parents=True, exist_ok=True)  # I'm damn traumatised by FileNotFoundErrors, I forgot for a second that this is required
+
     data.sort(key=lambda ev: ev.loss)  # lowest loss first
 
     for rank, ev in enumerate(data, start=1):
         filename = f"epoch_{epoch}_rank_{rank}_loss_{ev.loss:.4f}.json"
         model_data = ev.model.to_json()
 
-        with open(dir_path / filename, "w") as f:
+        with open(BASE_DIR / filename, "w") as f:
             json.dump(model_data, f, indent=4)
