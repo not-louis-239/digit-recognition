@@ -9,6 +9,7 @@ from ...digit_recogniser.image_manager import load_imgs_from_npy
 from ...utils.custom_types import RawImagesType, OneHotType
 from ...digit_recogniser.simulation import Evaluation, Simulation
 from ...digit_recogniser.digit_recogniser import DigitRecogniser
+from ...utils.diagnostic_helpers import print_warn, print_info
 
 @dataclass
 class DigitRecogniserWrapper:
@@ -49,9 +50,16 @@ class Assets:
         models_dir = (DIRS.assets.display_models).path()
 
         for model_dir in models_dir.glob("*"):
+            # model_dir: example: "victor__1_0_0__13k"
+            print_info(f"found file or directory: {model_dir}")
+
+            if not model_dir.is_dir():
+                print_warn(f"skipping non-directory file in models directory: {model_dir}")
+                continue
+
             manifest = model_dir / "manifest.json"
             if not manifest.exists():
-                print("Warning: skipping loading model with missing manifest:", model_dir)
+                print_warn(f"skipping loading model with missing manifest: {model_dir}")
                 continue
 
             with open(manifest, "r") as mani:
@@ -59,14 +67,14 @@ class Assets:
 
             files = manifest_data.get("files", [])
             if not files:
-                print("Warning: skipping loading model with no associated files in manifest:", model_dir)
+                print_warn(f"skipping loading model with no associated files in manifest: {model_dir}")
                 continue
             if (len_files := len(files)) > 1:
-                print(f"Warning: model has {len_files} associated files (expected 1). Only the first file will be loaded:", model_dir)
+                print_warn(f"model has {len_files} associated files (expected 1). Only the first file will be loaded: {model_dir}")
 
             filepath = (DIRS.assets.display_models / files[0]).path()
             if not filepath.exists():
-                print("Warning: skipping loading model with missing file:", filepath)
+                print_warn(f"skipping loading model with missing file: {filepath}")
                 continue
 
             try:
@@ -74,7 +82,7 @@ class Assets:
                     model_data_raw = json.load(f)  # Check if JSON is valid
                     assert isinstance(model_data_raw, dict), "Model JSON should be a dictionary at the top level"
             except json.JSONDecodeError:  # Checking for FileNotFoundError isn't necessary as we already check if the file exists, but we still need to catch JSONDecodeError to avoid crashing on corrupted files
-                print("Warning: skipping loading model with corrupted JSON file:", filepath)
+                print_warn(f"skipping loading model with corrupted JSON file: {filepath}")
                 continue
 
             name = manifest_data.get("name", "unknown_model")
@@ -84,6 +92,7 @@ class Assets:
 
             wrapper = DigitRecogniserWrapper(name=name, common_name=common_name, model=model, perf=perf)
             self.model_wrappers.append(wrapper)
+            print_info(f"successfully loaded model: {name} (common name: {common_name})")
 
     def _training_data_to_one_hots(self, data: RawImagesType) -> OneHotType:
         one_hots = []
