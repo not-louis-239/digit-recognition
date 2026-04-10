@@ -16,7 +16,7 @@ from typing import Any, TypedDict
 import numpy as np
 
 from ..utils import chance
-from ..utils.constants import NEW_CONFIG_RANGE, IMAGE_SIZE, LOGIT_GAIN, SCALE_MUTATION_FACTOR, SCALE_MUTATION_CHANCE
+from ..utils.constants import NEW_CONFIG_RANGE, IMAGE_SIZE, LOGIT_GAIN, SCALE_MUTATION_FACTOR, SCALE_MUTATION_CHANCE, NEURONS_PER_HIDDEN_LAYER
 
 def sigmoid(x: np.ndarray) -> np.ndarray:
     # NumPy's exp handles entire arrays at once
@@ -38,7 +38,7 @@ class Layer:
         self.bias = np.random.uniform(-NEW_CONFIG_RANGE, NEW_CONFIG_RANGE, (output_size, 1))
 
     def shape(self) -> tuple[int, int]:
-        """Returns the layer's shape in terms of (in, out)"""
+        """Returns the layer's shape in terms of (out, in)"""
         return self.weights.shape
 
     def forward(self, inputs: np.ndarray) -> np.ndarray:
@@ -85,9 +85,9 @@ class DigitRecogniser:
         """Creates a new DigitRecogniser with a random configuration"""
         # 784 -> 16 -> 16 -> 10
         self.layers: list[Layer] = [
-            Layer(784, 16),
-            Layer(16, 16),
-            Layer(16, 10)
+            Layer(784, NEURONS_PER_HIDDEN_LAYER),
+            Layer(NEURONS_PER_HIDDEN_LAYER, NEURONS_PER_HIDDEN_LAYER),
+            Layer(NEURONS_PER_HIDDEN_LAYER, 10)
         ]
 
         self.epoch = epoch  # purely cosmetic, but nice to keep track of
@@ -245,3 +245,11 @@ class DigitRecogniser:
                 "biases": layer0.bias.flatten().tolist(),
             },
         }
+
+    def shape(self) -> tuple[int, ...]:
+        """Returns the architecture of the model as a tuple, e.g. (784, 16, 16, 10)"""
+        # DEBUG
+        for layer in self.layers:
+            print(f"Layer shape: {layer.shape()}")
+
+        return tuple(layer.shape()[1] for layer in self.layers) + (self.layers[-1].shape()[0],)

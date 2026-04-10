@@ -231,6 +231,13 @@ class SimState(State):
             text=f"Autosave: {autosave_text}", colour=autosave_colour, font_profile=(self.assets.monospaced_reg, 22)
         )
 
+        # Show shape of the current models as (l0, l1...ln) where ln is the number of neurons in each layer
+        shape = self.sim.population[0].shape()
+        draw_text(
+            surface=wn, pos=(self.padding, self.padding + 400), horiz_align='left', vert_align='top',
+            text=f"Model Shape: {shape}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 22)
+        )
+
         # Show population, mutation rate, selection pressure
         mutation_rate = calc_mutation_rate(self.sim.epoch) * self.sim.season.mutation_modifier
         selection_pressure = BASE_SELECTION_PRESSURE * self.sim.season.selection_pressure_modifier

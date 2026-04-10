@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from ..utils import lerp
 from ..utils.dirs import DIRS
 
-def _load_config() -> dict:
+def _load_config() -> dict[str, Any]:
     config_path = (DIRS.assets / "config.json").path()
     try:
         with open(config_path, "r") as f:
@@ -27,12 +28,12 @@ def _get(key: str, default):
 __version__ = "0.1.0"
 
 # --- Softmax/Prediction Config ---
-LOGIT_GAIN = float(_get("LOGIT_GAIN", 1.1))
+LOGIT_GAIN = float(_get("LOGIT_GAIN", 1))
 
 # --- Loss Calculation Config ---
-CONFIDENCE_PENALTY_FACTOR = float(_get("CONFIDENCE_PENALTY_FACTOR", 0.05))
-SMALL_MARGIN_PENALTY_FACTOR = float(_get("SMALL_MARGIN_PENALTY_FACTOR", 0.05))
-TARGET_MARGIN = float(_get("TARGET_MARGIN", 0.3))  # top guess - 2nd top guess
+CONFIDENCE_PENALTY_FACTOR = float(_get("CONFIDENCE_PENALTY_FACTOR", 0.0))
+SMALL_MARGIN_PENALTY_FACTOR = float(_get("SMALL_MARGIN_PENALTY_FACTOR", 0.0))
+TARGET_MARGIN = float(_get("TARGET_MARGIN", 0.0))  # top guess - 2nd top guess
 
 # --- Simulator Config ---
 IMAGE_SIZE = int(_get("IMAGE_SIZE", 28))
@@ -43,11 +44,11 @@ NEURONS_PER_HIDDEN_LAYER = int(_get("NEURONS_PER_HIDDEN_LAYER", 16))
 NUM_HIDDEN_LAYERS = int(_get("NUM_HIDDEN_LAYERS", 2))
 POPULATION_SIZE = int(_get("POPULATION_SIZE", 50))
 
-SCALE_MUTATION_FACTOR = float(_get("SCALE_MUTATION_FACTOR", 1.05))
-SCALE_MUTATION_CHANCE = float(_get("SCALE_MUTATION_CHANCE", 0.1))
+SCALE_MUTATION_FACTOR = float(_get("SCALE_MUTATION_FACTOR", 1.00))
+SCALE_MUTATION_CHANCE = float(_get("SCALE_MUTATION_CHANCE", 0.0))
 
 # Past this, there will be no new immigrants or hypermutants
-HARDENING_EPOCH = int(_get("HARDENING_EPOCH", 4000))
+HARDENING_EPOCH = int(_get("HARDENING_EPOCH", 0))
 
 # Only keep the best 1 / selection_pressure models each generation
 # Base selection pressure is modified based on season and in future, possibly other factors
