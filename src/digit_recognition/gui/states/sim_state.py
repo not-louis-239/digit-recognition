@@ -2,15 +2,15 @@ from pygame import Surface
 import pygame as pg
 import math
 
-from digit_recognition.utils.constants import WN_W, WN_H
+from digit_recognition.utils.constants import WN_W, WN_H, BASE_SELECTION_PRESSURE, calc_mutation_rate
 from digit_recognition.gui.utils.text_utils import draw_text
 from digit_recognition.gui.utils.asset_manager import Assets
 from digit_recognition.gui.utils.buttons import Button
 from digit_recognition.gui.utils.input_manager import InputManager
 from digit_recognition.gui.states import State, StateChangeRequest, StateID
-from digit_recognition.utils.seasons import get_year_and_season
 from digit_recognition.digit_recogniser.simulation import Simulation, save_to_dir
 from digit_recognition.gui.utils.ambient_messages import AmbientMessage
+from digit_recognition.utils import clamp
 
 class SimState(State):
     def __init__(self, assets: Assets, sim: Simulation):
@@ -161,18 +161,84 @@ class SimState(State):
         )
         draw_text(
             surface=wn, pos=(self.padding, self.padding + 60), horiz_align='left', vert_align='top',
-            text=f"Year {self.sim.year:,}", colour=(255, 255, 255), font_profile=(self.assets.monospaced_reg, 24)
+            text=f"Year {self.sim.year:,}", colour=(255, 255, 255), font_profile=(self.assets.monospaced_reg, 22)
         )
         draw_text(
             surface=wn, pos=(self.padding, self.padding + 90), horiz_align='left', vert_align='top',
-            text=f"Generation {self.sim.epoch:,}", colour=(150, 150, 150), font_profile=(self.assets.monospaced_reg, 24)
+            text=f"Generation {self.sim.epoch:,}", colour=(150, 150, 150), font_profile=(self.assets.monospaced_reg, 22)
         )
 
+        # Show autosave status
         autosave_colour = (100, 255, 100) if self.autosave else (255, 100, 100)
+        autosave_text = f"Every {self.autosave_interval:,} epochs" if self.autosave else "Off"
         draw_text(
             surface=wn, pos=(self.padding, self.padding + 140), horiz_align='left', vert_align='top',
-            text=f"Autosave: {f"Every {self.autosave_interval:,} epochs" if self.autosave else "Off"}", colour=autosave_colour, font_profile=(self.assets.monospaced_reg, 24)
+            text=f"Autosave: {autosave_text}", colour=autosave_colour, font_profile=(self.assets.monospaced_reg, 22)
         )
+
+        # Show population, mutation rate, selection pressure
+        mutation_rate = calc_mutation_rate(self.sim.epoch) * self.sim.season.mutation_modifier
+        selection_pressure = BASE_SELECTION_PRESSURE * self.sim.season.selection_pressure_modifier
+        population_size = len(self.sim.population)
+        draw_text(
+            surface=wn, pos=(self.padding, self.padding + 180), horiz_align='left', vert_align='top',
+            text=f"Population: {population_size}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 22)
+        )
+        draw_text(
+            surface=wn, pos=(self.padding, self.padding + 210), horiz_align='left', vert_align='top',
+            text=f"Mutation Rate: {mutation_rate:.4f}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 22)
+        )
+        draw_text(
+            surface=wn, pos=(self.padding, self.padding + 240), horiz_align='left', vert_align='top',
+            text=f"Selection Pressure: {selection_pressure:.2f}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 22)
+        )
+
+
+        # Show population composition: elites, protected
+        # TODO: eventually we'd want this to be retrieved, not computed, but it is not a major problem as it is relatively cheap on the CPU
+        elites_count = 0
+        protected_count = 0
+        if self.sim.last_evals:
+            elites_count = clamp(int(population_size // max(1e-12, selection_pressure)), (1, population_size))  # using epsilon minimum to prevent ZeroDivisionError
+            protected_count = sum(1 for model in self.sim.population if model.grace > 0)
+
+        draw_text(
+            surface=wn, pos=(self.padding, self.padding + 320), horiz_align='left', vert_align='top',
+            text=f"Elites: {elites_count} | Protected: {protected_count}", colour=(200, 200, 200),
+            font_profile=(self.assets.monospaced_reg, 22)
+        )
+
+
+        # Show loss distribution as bar graph with lowest loss on the left
+        if self.sim.last_evals:
+            losses = [ev.loss for ev in self.sim.last_evals]
+            min_loss = min(losses)
+            max_loss = max(losses)
+            spread = max(max_loss - min_loss, 1e-8)
+
+            graph_w = 520
+            graph_h = 120
+            graph_x = (WN_W - graph_w) // 2 + 40
+            graph_y = self.padding + 20
+
+            pg.draw.rect(wn, (45, 45, 60), (graph_x, graph_y, graph_w, graph_h))
+
+            bar_w = max(1, graph_w // max(1, len(losses)))
+            for i, ev in enumerate(self.sim.last_evals):
+                loss = ev.loss
+                norm = (loss - min_loss) / spread
+                bar_h = int(norm * graph_h)
+                x = graph_x + i * bar_w
+                y = graph_y + (graph_h - bar_h)
+                colour = (100, 255, 100) if ev.model.grace > 0 else (140, 200, 255)
+                pg.draw.rect(wn, colour, (x, y, bar_w, bar_h))
+
+            draw_text(
+                surface=wn, pos=(graph_x, graph_y - 6), horiz_align='left', vert_align='bottom',
+                text="Loss Distribution (best → worst)", colour=(180, 180, 180),
+                font_profile=(self.assets.monospaced_reg, 18)
+            )
+
 
         # Show notification popups
         draw_text(
