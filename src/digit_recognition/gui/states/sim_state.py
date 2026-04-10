@@ -24,7 +24,10 @@ class SimState(State):
         self.run_button = Button((WN_W - 200 - self.padding, self.padding), (200, 80), "Run")
         self.return_button = Button((self.padding, WN_H - 100 - self.padding), (200, 100), "Return")
         self.save_button = Button((2 * self.padding + 200, WN_H - 100 - self.padding), (300, 100), "Save Models")
-        self.autosave_button = Button((3 * self.padding + 500, WN_H - 100 - self.padding), (300, 100), "Autosave")
+
+        self.autosave_button = Button((3 * self.padding + 500, WN_H - 100 - self.padding), (300, 100), "Autosave: Off")
+        self.autosave_dec_button = Button((3 * self.padding + 500, WN_H - 170 - self.padding), (145, 60), "-10")
+        self.autosave_inc_button = Button((3 * self.padding + 655, WN_H - 170 - self.padding), (145, 60), "+10")
 
         self.notifs = AmbientMessage()
 
@@ -64,6 +67,14 @@ class SimState(State):
             else:
                 self.notifs.set_msg(text="Autosave disabled.", colour=(255, 200, 100), lifetime_s=2)
 
+        if self.autosave_dec_button.check_click(input_manager.events):
+            self.autosave_interval = max(10, self.autosave_interval - 10)
+            self.notifs.set_msg(text=f"Autosave interval: {self.autosave_interval} epochs.", colour=(200, 200, 200), lifetime_s=2)
+
+        if self.autosave_inc_button.check_click(input_manager.events):
+            self.autosave_interval += 10
+            self.notifs.set_msg(text=f"Autosave interval: {self.autosave_interval} epochs.", colour=(200, 200, 200), lifetime_s=2)
+
         return StateChangeRequest()
 
     def draw(self, wn: Surface) -> None:
@@ -74,6 +85,8 @@ class SimState(State):
         self.return_button.draw(wn)
         self.save_button.draw(wn)
         self.autosave_button.draw(wn)
+        self.autosave_dec_button.draw(wn)
+        self.autosave_inc_button.draw(wn)
 
         # Show running status
         if self.sim_running:
