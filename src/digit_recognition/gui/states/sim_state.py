@@ -269,7 +269,7 @@ class SimState(State):
             losses = [ev.loss for ev in self.sim.last_evals]
             min_loss = min(losses)
             max_loss = max(losses)
-            spread = max(max_loss, 1e-8)
+            spread = max(max_loss - min_loss, 1e-8)
 
             graph_w = 520
             graph_h = 120
@@ -280,8 +280,7 @@ class SimState(State):
 
             bar_w = max(1, graph_w / max(1, len(losses)))
             for i, ev in enumerate(self.sim.last_evals):
-                loss = ev.loss
-                norm = (loss) / spread
+                norm = (ev.loss - min_loss) / spread
                 bar_h = int(norm * graph_h)
                 x = graph_x + i * bar_w
                 y = graph_y + (graph_h - bar_h)

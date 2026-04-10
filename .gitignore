@@ -17,3 +17,6 @@ __pycache__/
 # Auto-generated junk
 .DS_Store
 Thumbs.db
+
+# Ignore tinkering for now
+assets/config.json
