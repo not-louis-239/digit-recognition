@@ -151,6 +151,13 @@ class SimState(State):
                         font_profile=(self.assets.monospaced_reg, 18)
                     )
 
+                last_y = entry_y
+                draw_text(
+                    surface=wn, pos=(WN_W - self.padding, last_y + 30), horiz_align='right', vert_align='top',
+                    text=f"Top Guess Confidence: {preds[model_prediction]:.4f}", colour=(200, 200, 200),
+                    font_profile=(self.assets.monospaced_reg, 20)
+                )
+
                 # Render the sample image so it's clear what the model "saw"
                 sample_scale = 5
                 sample_size = IMAGE_SIZE * sample_scale
@@ -260,9 +267,8 @@ class SimState(State):
         # Show loss distribution as bar graph with lowest loss on the left
         if self.sim.last_evals:
             losses = [ev.loss for ev in self.sim.last_evals]
-            min_loss = min(losses)
             max_loss = max(losses)
-            spread = max(max_loss - min_loss, 1e-8)
+            spread = max(max_loss, 1e-8)
 
             graph_w = 520
             graph_h = 120
@@ -271,15 +277,15 @@ class SimState(State):
 
             pg.draw.rect(wn, (45, 45, 60), (graph_x, graph_y, graph_w, graph_h))
 
-            bar_w = max(1, graph_w // max(1, len(losses)))
+            bar_w = max(1, graph_w / max(1, len(losses)))
             for i, ev in enumerate(self.sim.last_evals):
                 loss = ev.loss
-                norm = (loss - min_loss) / spread
+                norm = (loss) / spread
                 bar_h = int(norm * graph_h)
                 x = graph_x + i * bar_w
                 y = graph_y + (graph_h - bar_h)
                 colour = (100, 255, 100) if ev.model.grace > 0 else (140, 200, 255)
-                pg.draw.rect(wn, colour, (x, y, bar_w, bar_h))
+                pg.draw.rect(wn, colour, (x, y, bar_w + 1, bar_h))  # +1 removes gaps
 
             draw_text(
                 surface=wn, pos=(graph_x, graph_y - 6), horiz_align='left', vert_align='bottom',
