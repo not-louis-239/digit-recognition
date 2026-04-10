@@ -1,4 +1,4 @@
-from typing import TypeAlias
+from typing import TypeAlias, NamedTuple
 from pathlib import Path
 
 import numpy as np
@@ -12,4 +12,10 @@ FontProfile: TypeAlias = tuple[Path | None, int]  # (family, size)
 
 # arrays must be of size (IMAGE_SIZE, IMAGE_SIZE), with an attached label for the correct digit
 RawImagesType: TypeAlias = list[tuple[np.ndarray, int]]
-OneHotType: TypeAlias = list[tuple[np.ndarray, int, np.ndarray]]  # (image, correct_digit, one_hot_array)
+
+class _OneHotTuple(NamedTuple):
+    image: np.ndarray
+    correct_digit: int
+    one_hot: np.ndarray
+
+OneHotType: TypeAlias = list[_OneHotTuple]  # (image, correct_digit, one_hot_array)
