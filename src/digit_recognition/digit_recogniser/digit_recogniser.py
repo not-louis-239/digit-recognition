@@ -18,6 +18,12 @@ import numpy as np
 from ..utils import chance
 from ..utils.constants import NEW_CONFIG_RANGE, IMAGE_SIZE, LOGIT_GAIN, SCALE_MUTATION_FACTOR, SCALE_MUTATION_CHANCE, NEURONS_PER_HIDDEN_LAYER
 
+def leaky_relu(x: np.ndarray) -> np.ndarray:
+    if x < 0:
+        return 0.01 * x
+    else:
+        return x
+
 def sigmoid(x: np.ndarray) -> np.ndarray:
     # NumPy's exp handles entire arrays at once
     return 1 / (1 + np.exp(-x))
@@ -45,7 +51,7 @@ class Layer:
         """Process inputs and return outputs dependent on oneself's contents."""
         # inputs: (input_size, 1)
         # weight matrix multiplication + bias
-        return sigmoid(np.dot(self.weights, inputs) + self.bias)
+        return leaky_relu(np.dot(self.weights, inputs) + self.bias)
 
     def intensify(self, scalar: float) -> None:
         """Scale all weights by a scalar. This can be used for hypermutants,
@@ -173,10 +179,10 @@ class DigitRecogniser:
         X = image_arrays.reshape(image_arrays.shape[0], -1).T  # (784, N)
         out = X
         for i, layer in enumerate(self.layers):
-            out = sigmoid(layer.weights @ out + layer.bias)  # (out, N)
-            if i == len(self.layers) - 1:
-                out = softmax(out * LOGIT_GAIN)
-        return out  # (10, N)
+            out = layer.weights @ out + layer.bias  # Linear
+            if i < len(self.layers) - 1:
+                out = leaky_relu(out)  # ReLU for hidden layers
+        return softmax(out * LOGIT_GAIN)  # (10, N)
 
     def mutate(self, rate: float) -> None:
         """Change one's configuration slightly"""
@@ -248,8 +254,4 @@ class DigitRecogniser:
 
     def shape(self) -> tuple[int, ...]:
         """Returns the architecture of the model as a tuple, e.g. (784, 16, 16, 10)"""
-        # DEBUG
-        for layer in self.layers:
-            print(f"Layer shape: {layer.shape()}")
-
         return tuple(layer.shape()[1] for layer in self.layers) + (self.layers[-1].shape()[0],)
