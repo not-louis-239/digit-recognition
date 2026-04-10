@@ -13,17 +13,16 @@
 # limitations under the License.
 
 from typing import Any, TypedDict
+from warnings import deprecated
 import numpy as np
 
 from ..utils import chance
 from ..utils.constants import NEW_CONFIG_RANGE, IMAGE_SIZE, LOGIT_GAIN, SCALE_MUTATION_FACTOR, SCALE_MUTATION_CHANCE, NEURONS_PER_HIDDEN_LAYER
 
 def leaky_relu(x: np.ndarray) -> np.ndarray:
-    if x < 0:
-        return 0.01 * x
-    else:
-        return x
+    return np.where(x > 0, x, 0.01 * x)
 
+@deprecated("Models now use leaky_relu instead of sigmoid for hidden layers, and softmax for output layer. This function is no longer used.")
 def sigmoid(x: np.ndarray) -> np.ndarray:
     # NumPy's exp handles entire arrays at once
     return 1 / (1 + np.exp(-x))

@@ -79,8 +79,12 @@ class Simulation:
     def evaluate_model(self, model: DigitRecogniser, data: list[tuple[np.ndarray, int, np.ndarray]]) -> tuple[float, float]:
         """Returns tuple of (average_loss, accuracy_rate), where 0 <= accuracy_rate <= 1. data is tuple[img, label, one_hot]"""
 
-        images = np.array([img for img, *_ in data], dtype=np.float32)  # (N, 28, 28)
-        labels = np.array([label for _, label, _ in data], dtype=np.int64)  # (N,)
+        # Subsample data for faster evaluation (use only 20% of data for speed)
+        subsample_size = max(100, len(data) // 5)  # At least 100 samples, or 20% of data
+        data_subset = random.sample(data, subsample_size)
+
+        images = np.array([img for img, *_ in data_subset], dtype=np.float32)  # (N, 28, 28)
+        labels = np.array([label for _, label, _ in data_subset], dtype=np.int64)  # (N,)
 
         preds = model.predict_batch(images)  # (10, N)
 
