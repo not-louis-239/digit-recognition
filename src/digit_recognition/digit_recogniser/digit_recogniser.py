@@ -15,7 +15,7 @@
 from typing import Any, TypedDict
 import numpy as np
 
-from ..utils.constants import STARTING_MUTATION_RATE, NEW_CONFIG_RANGE, IMAGE_SIZE, calc_mutation_rate
+from ..utils.constants import STARTING_MUTATION_RATE, NEW_CONFIG_RANGE, IMAGE_SIZE
 
 def sigmoid(x: np.ndarray) -> np.ndarray:
     # NumPy's exp handles entire arrays at once
@@ -160,12 +160,12 @@ class DigitRecogniser:
         for layer in self.layers:
             layer.mutate(rate)
 
-    def spawn_child(self, current_epoch: int) -> DigitRecogniser:
+    def spawn_child(self, current_epoch: int, mutation_rate: float) -> DigitRecogniser:
         """Return a slightly mutated version of oneself.
         Basically "asexual reproduction" in a sense."""
 
         child = self.copy()
-        child.mutate(calc_mutation_rate(current_epoch))
+        child.mutate(mutation_rate)
         child.epoch = current_epoch
 
         return child

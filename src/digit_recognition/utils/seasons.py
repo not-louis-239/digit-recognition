@@ -17,24 +17,49 @@ from dataclasses import dataclass
 from digit_recognition.utils.colours import col, RESET, BOLD, FAINT
 from digit_recognition.utils.custom_types import Colour
 
-@dataclass
+@dataclass(kw_only=True)
 class Season:
     name: str
     colour: Colour
+    mutation_modifier: float
+    selection_pressure_modifier: float
 
 SEASONS: list[Season] = [
-    Season("Spring", (100, 255, 100)),
-    Season("Summer", (255, 220, 100)),
-    Season("Autumn", (255, 140, 100)),
-    Season("Winter", (200, 200, 255))
+    Season(
+        name="Spring",
+        colour=(100, 255, 100),
+        mutation_modifier=1.1,
+        selection_pressure_modifier=0.9
+    ),
+    Season(
+        name="Summer",
+        colour=(255, 220, 100),
+        mutation_modifier=1.5,
+        selection_pressure_modifier=0.6
+    ),
+    Season(
+        name="Autumn",
+        colour=(255, 140, 100),
+        mutation_modifier=0.9,
+        selection_pressure_modifier=1.1
+    ),
+    Season(
+        name="Winter",
+        colour=(200, 200, 255),
+        mutation_modifier=0.6,
+        selection_pressure_modifier=1.6
+    )
 ]
+
+def get_season(generation: int) -> Season:
+    """Returns the season for a given year"""
+    season_idx = generation % len(SEASONS)
+    return SEASONS[season_idx]
 
 def format_year(generation: int) -> tuple[int, Season]:
     """Returns (year, season)"""
 
-    season_idx = generation % len(SEASONS)
-
-    season = SEASONS[season_idx]
+    season = get_season(generation)
     year = generation // len(SEASONS)
 
     return (year, season)

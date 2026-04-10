@@ -41,7 +41,7 @@ class SimState(State):
             self.sim.run_generation(self.assets.one_hots)
 
             if (self.autosave) and (self.sim.last_evals) and (self.sim.epoch % self.autosave_interval == 0):
-                self.notifs.set_msg(text=f"Epoch {self.sim.epoch} saved (Autosave)", colour=(100, 255, 100), lifetime_s=1.5)
+                self.notifs.set_msg(text=f"Epoch {self.sim.epoch:,} saved (Autosave)", colour=(100, 255, 100), lifetime_s=1.5)
                 save_to_dir(self.sim.last_evals[:10])
 
     def take_input(self, input_manager: InputManager) -> StateChangeRequest:

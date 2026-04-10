@@ -21,9 +21,8 @@ import json
 import numpy as np
 from .digit_recogniser import DigitRecogniser
 from ..utils.dirs import DIRS
-from ..utils.constants import POPULATION_SIZE, SELECTION_PRESSURE
-from ..utils.custom_types import TrainingDataType
-
+from ..utils.constants import POPULATION_SIZE, BASE_SELECTION_PRESSURE, STARTING_MUTATION_RATE, calc_mutation_rate
+from ..utils.seasons import format_year
 
 @dataclass
 class Evaluation:
@@ -59,12 +58,12 @@ class Simulation:
                 # Assume the epoch of the 'latest' descendant
                 if model.epoch > self.epoch:
                     self.epoch = model.epoch
+        else:
+            for _ in range(POPULATION_SIZE):
+                self.population.append(DigitRecogniser())
+                self.epoch: int = 0
 
-            return
-
-        for _ in range(POPULATION_SIZE):
-            self.population.append(DigitRecogniser())
-            self.epoch: int = 0
+        self.year, self.season = format_year(self.epoch)
 
     def evaluate_model(self, model: DigitRecogniser, data: list[tuple[np.ndarray, int, np.ndarray]]) -> tuple[float, float]:
         """Returns tuple of (average_loss, accuracy_rate), where 0 <= accuracy_rate <= 1. data is tuple[img, label, one_hot]"""
@@ -92,6 +91,10 @@ class Simulation:
         The strong shall eat the weak, as it is said.
         """
 
+        # Calculate parameters like mutation rate and selection pressure
+        mutation_rate = calc_mutation_rate(self.epoch) * self.season.mutation_modifier
+        selection_pressure = BASE_SELECTION_PRESSURE * self.season.selection_pressure_modifier
+
         # Calculate fitness for everyone
         # We store them as (loss, model) tuples so we can sort them
         results: list[Evaluation] = []
@@ -107,7 +110,7 @@ class Simulation:
         print(f"Generation Best Loss: {best_eval.loss:.4f} | Best Acc: {best_eval.accuracy_rate:.4%}")
 
         # Selection: Keep the top 10%. The rest? Goodbye.
-        num_elites = max(1, POPULATION_SIZE // SELECTION_PRESSURE)
+        num_elites = max(1, POPULATION_SIZE // selection_pressure)
         elites: list[DigitRecogniser] = [e.model for e in results[:num_elites]]
 
         # Repopulation: Fill the rest of the slots with mutated clones
@@ -116,7 +119,7 @@ class Simulation:
         while len(new_generation) < POPULATION_SIZE:
             # Pick a random winner from the elites and have it make an offspring
             parent = random.choice(elites)
-            new_generation.append(parent.spawn_child(self.epoch + 1))
+            new_generation.append(parent.spawn_child(self.epoch + 1, mutation_rate))
 
         self.population = new_generation
 
