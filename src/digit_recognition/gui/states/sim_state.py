@@ -1,4 +1,5 @@
 import math
+import random
 
 import pygame as pg
 import numpy as np
@@ -14,6 +15,7 @@ from digit_recognition.gui.states import State, StateChangeRequest, StateID
 from digit_recognition.digit_recogniser.simulation import Simulation, save_to_dir
 from digit_recognition.gui.utils.ambient_messages import AmbientMessage
 from digit_recognition.utils import clamp
+from digit_recognition.utils.diagnostic_helpers import print_warn
 
 class SimState(State):
     def __init__(self, assets: Assets, sim: Simulation):
@@ -45,7 +47,14 @@ class SimState(State):
         self.notifs.update(dt_s)
 
         if self.sim_running:
-            self.sim.run_generation(self.assets.training_data)
+            # Take a random sample of the training data (makes training faster)
+            subsample_size = clamp(int(len(self.assets.training_data) * 0.2), (100, 1_000))  # 20% of data (min 100 samples, and no more than 1,000 samples)
+            if subsample_size > len(self.assets.training_data):
+                print_warn("scarce data: using all training data")
+
+            assert isinstance(subsample_size, int)
+            subsample = random.sample(self.assets.training_data, k=subsample_size)
+            self.sim.run_generation(subsample)
 
             if (self.autosave) and (self.sim.last_evals) and (self.sim.epoch % self.autosave_interval == 0):
                 self.notifs.set_msg(text=f"Epoch {self.sim.epoch:,} saved (Autosave)", colour=(100, 255, 100), lifetime_s=1.5)
@@ -348,12 +357,19 @@ class SimState(State):
 
             draw_text(
                 surface=wn, pos=(self.padding, left_items_start_y + 180), horiz_align='left', vert_align='top',
-                text=f"Elites: {elites_count} | Protected: {protected_count}", colour=(200, 200, 200),
+                text=f"Elites: {elites_count} | Protected: {protected_count}", colour=(220, 220, 220),
+                font_profile=(self.assets.monospaced_reg, 22)
+            )
+
+            # Show amount of training data
+            draw_text(
+                surface=wn, pos=(self.padding, left_items_start_y + 210), horiz_align='left', vert_align='top',
+                text=f"Training on {len(self.assets.training_data):,} samples", colour=(220, 220, 220),
                 font_profile=(self.assets.monospaced_reg, 22)
             )
 
             # Show notification popups
             draw_text(
                 surface=wn, pos=(self.padding, WN_H - self.padding * 2 - 100), horiz_align='left', vert_align='bottom',
-                text=f"{self.notifs.text}", colour=self.notifs.colour, font_profile=(self.assets.monospaced_reg, 24)
+                text=f"{self.notifs.text}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 24)
             )

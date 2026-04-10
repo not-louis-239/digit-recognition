@@ -4,6 +4,7 @@ import pygame as pg
 from pygame import Surface
 
 from digit_recognition.gui.utils.canvas import Canvas
+from digit_recognition.gui.utils.ambient_messages import AmbientMessage
 from digit_recognition.gui.utils.input_manager import MouseButton, InputManager
 from digit_recognition.gui.utils.buttons import Button
 from digit_recognition.gui.states import State, StateChangeRequest, StateID
@@ -43,8 +44,21 @@ class GalleryState(State):
     def __init__(self, assets: Assets) -> None:
         self.assets = assets
         self.ui_padding = 30
+
         self.canvas = Canvas(IMAGE_SIZE, IMAGE_SIZE)
-        self.button = Button(pos=(self.ui_padding, WN_H - self.ui_padding - 75), size=(150, 75), text="Back")
+        self.return_button = Button(pos=(self.ui_padding, WN_H - self.ui_padding - 75), size=(150, 75), text="Back")
+        self.notif = AmbientMessage()
+
+        self.datasets = [
+            assets.training_data,
+            assets.dev_data,
+            assets.test_data
+        ]
+
+        self.view_idx = 0
+        self.is_drawing_mode: bool = False
+        self.show_number_balance: bool = False
+        self.active_digit: int = 0
 
     def reset(self) -> None:
         self.canvas.clear()
@@ -53,7 +67,7 @@ class GalleryState(State):
         pass
 
     def take_input(self, input_manager: InputManager) -> StateChangeRequest:
-        if self.button.check_click(input_manager.events):
+        if self.return_button.check_click(input_manager.events):
             return StateChangeRequest(new=StateID.TITLE)
 
         if input_manager.mouse_is_down(MouseButton.LMB):
@@ -80,4 +94,4 @@ class GalleryState(State):
     def draw(self, wn: Surface) -> None:
         wn.fill((30, 30, 30))
         self.canvas.draw(wn, tile_size_px=20, start_pos=(self.ui_padding, self.ui_padding))
-        self.button.draw(wn)
+        self.return_button.draw(wn)

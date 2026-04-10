@@ -88,12 +88,8 @@ class Simulation:
         Not deprecated as it is used to assign evaluations to models loaded from disk, which is only done once per model.
         Not for use in training, use evaluate_models_batch() instead."""
 
-        # Subsample data for faster evaluation (use only 20% of data for speed)
-        subsample_size = max(100, len(data) // 5)  # At least 100 samples, or 20% of data
-        data_subset = random.sample(data, subsample_size)
-
-        images = np.array([img for img, *_ in data_subset], dtype=np.float32)  # (N, 28, 28)
-        labels = np.array([label for _, label, _ in data_subset], dtype=np.int64)  # (N,)
+        images = np.array([img for img, *_ in data], dtype=np.float32)  # (N, 28, 28)
+        labels = np.array([label for _, label, _ in data], dtype=np.int64)  # (N,)
 
         preds = model.predict_batch(images)  # (10, N)
 
@@ -142,29 +138,29 @@ class Simulation:
 
     def evaluate_models_batch(self, models: list[DigitRecogniser], data: OneHotType) -> tuple[np.ndarray, np.ndarray]:
         """Batched evaluation of all models for speed. Returns (losses, accuracies) arrays."""
-        subsample_size = max(100, len(data) // 5)
         self._prepare_cached_data(data)
 
         assert self._cached_images is not None and self._cached_labels is not None
 
         num_models = len(models)
+        num_samples = len(data)
         num_samples = self._cached_labels.shape[0]
-        indices = random.sample(range(num_samples), subsample_size)
+        indices = range(num_samples)
 
         images = self._cached_images[indices]
         labels = self._cached_labels[indices]
 
         # Forward pass for all models in batch
-        outputs = np.empty((num_models, 10, subsample_size), dtype=np.float32)
+        outputs = np.empty((num_models, 10, num_samples), dtype=np.float32)
         for idx, model in enumerate(models):
             outputs[idx] = model.predict_batch(images)
 
         # Compute targets (10, N)
-        targets = np.zeros((10, subsample_size), dtype=np.float32)
-        targets[labels, np.arange(subsample_size)] = 1.0
+        targets = np.zeros((10, num_samples), dtype=np.float32)
+        targets[labels, np.arange(num_samples)] = 1.0
 
         # Loss - the loss function used is the same as in evaluate_model
-        loss = -np.sum(targets[np.newaxis, :, :] * np.log(np.clip(outputs, 1e-15, 1 - 1e-15)), axis=(1, 2)) / subsample_size
+        loss = -np.sum(targets[np.newaxis, :, :] * np.log(np.clip(outputs, 1e-15, 1 - 1e-15)), axis=(1, 2)) / num_samples
 
         # Accuracy
         preds = np.argmax(outputs, axis=1)
