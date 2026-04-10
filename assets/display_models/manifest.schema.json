@@ -1,0 +1,46 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Display Model Manifest",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "$schema": {
+            "type": "string",
+            "description": "The JSON Schema version used for validation."
+        },
+        "architecture": {
+            "type": "array",
+            "items": {
+                "type": "integer"
+            },
+            "description": "The architecture of the model, represented as an array of integers."
+        },
+        "epoch": {
+            "type": "integer",
+            "description": "The epoch number at which the model was saved."
+        },
+        "name": {
+            "type": "string",
+            "description": "The name of the display model."
+        },
+        "last_updated": {
+            "type": "string",
+            "description": "The date when the model was last updated, in the format YYYY_MM_DD."
+        },
+        "activation": {
+            "type": "string",
+            "description": "The activation function used in the model."
+        },
+        "files": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "description": "A list of files associated with the model."
+        },
+        "notes": {
+            "type": ["string", "null"],
+            "description": "Additional notes about the model."
+        }
+    }
+}

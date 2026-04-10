@@ -1,0 +1,12 @@
+{
+    "$schema": "../manifest.schema.json",
+    "architecture": [ 784, 100, 100, 10 ],
+    "epoch": 9999,
+    "name": "victor1.0.0:90k",
+    "last_updated": "2026_04_10",
+    "activation": "leaky_relu",
+    "files": [
+        "epoch_9999___rank_1__loss_0_7007.json"
+    ],
+    "notes": "First model to reach 100% accuracy on the training data set (1000 images at the time), and takes 90,000 parameters."
+}

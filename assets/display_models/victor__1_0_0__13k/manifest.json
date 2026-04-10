@@ -1,0 +1,12 @@
+{
+    "$schema": "../manifest.schema.json",
+    "architecture": [ 784, 16, 16, 10 ],
+    "epoch": 27499,
+    "name": "victor1.0.0:13k",
+    "last_updated": "2026_04_10",
+    "activation": "sigmoid",
+    "files": [
+        "epoch_27499__rank_1__loss_1_4860.json"
+    ],
+    "notes": "First model to break 96% accuracy."
+}
