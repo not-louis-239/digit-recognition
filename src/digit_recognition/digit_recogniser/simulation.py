@@ -15,12 +15,11 @@
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-import torch
 import random
 import json
 
 import numpy as np
-from .digit_recogniser import DigitRecogniser, device
+from .digit_recogniser import DigitRecogniser
 from ..utils import chance, clamp
 from ..utils.dirs import DIRS
 from ..utils.constants import (
@@ -33,7 +32,6 @@ from ..utils.constants import (
     TARGET_MARGIN,
     HARDENING_EPOCH,
     LOGIT_GAIN,
-    USE_GPU_ACCEL,
     calc_mutation_rate
 )
 from ..utils.seasons import get_year_and_season
@@ -55,8 +53,8 @@ class Simulation:
         self.last_evals: list[Evaluation] = []  # makes results accessible to GUI elements
 
         self._cached_training_data_id: int | None = None
-        self._cached_images: torch.Tensor | None = None
-        self._cached_labels: torch.Tensor | None = None
+        self._cached_images: np.ndarray | None = None
+        self._cached_labels: np.ndarray | None = None
 
         if seed is not None:
             # Load the population from the seed
@@ -123,7 +121,7 @@ class Simulation:
         return loss, accuracy
 
     def _prepare_cached_data(self, data: list[tuple[np.ndarray, int, np.ndarray]]) -> None:
-        """Cache the training dataset as torch tensors, optionally on the selected device."""
+        """Cache the training dataset as NumPy arrays."""
         data_id = id(data)
         if self._cached_training_data_id == data_id:
             return
@@ -131,15 +129,8 @@ class Simulation:
         images = np.stack([img for img, *_ in data], dtype=np.float32)
         labels = np.array([label for _, label, _ in data], dtype=np.int64)
 
-        tensor_images = torch.from_numpy(images.reshape(images.shape[0], -1).T).float()
-        tensor_labels = torch.from_numpy(labels)
-
-        if USE_GPU_ACCEL:
-            tensor_images = tensor_images.to(device)
-            tensor_labels = tensor_labels.to(device)
-
-        self._cached_images = tensor_images
-        self._cached_labels = tensor_labels
+        self._cached_images = images.reshape(images.shape[0], -1).T
+        self._cached_labels = labels
         self._cached_training_data_id = data_id
 
     def evaluate_models_batch(self, models: list[DigitRecogniser], data: list[tuple[np.ndarray, int, np.ndarray]]) -> tuple[np.ndarray, np.ndarray]:
@@ -153,43 +144,26 @@ class Simulation:
         num_samples = self._cached_labels.shape[0]
         indices = random.sample(range(num_samples), subsample_size)
 
-        images = self._cached_images[:, indices]  # (784, N)
-        labels = self._cached_labels[indices]     # (N,)
+        images = self._cached_images[:, indices]
+        labels = self._cached_labels[indices]
 
-        # Stack weights and biases for all models
-        layer_weights = []
-        layer_biases = []
-        for i in range(len(models[0].layers)):
-            w = torch.stack([m.layers[i].weights for m in models])  # (num_models, out, in)
-            b = torch.stack([m.layers[i].bias for m in models])    # (num_models, out, 1)
-            layer_weights.append(w.to(device if USE_GPU_ACCEL else w.device))
-            layer_biases.append(b.to(device if USE_GPU_ACCEL else b.device))
+        # Forward pass for all models in batch
+        outputs = np.empty((num_models, 10, subsample_size), dtype=np.float32)
+        for idx, model in enumerate(models):
+            outputs[idx] = model.predict_batch(images)
 
-        # Prepare input: expand to (num_models, 784, N)
-        out = images.unsqueeze(0).expand(num_models, -1, -1)
-
-        # Forward pass for all models
-        for i, (w, b) in enumerate(zip(layer_weights, layer_biases)):
-            out = torch.matmul(w, out) + b
-            if i < len(layer_weights) - 1:
-                out = torch.where(out > 0, out, 0.01 * out)
-
-        # Softmax on output layer
-        out = torch.softmax(out * LOGIT_GAIN, dim=1)  # (num_models, 10, N)
-
-        # Compute one-hot targets on the same device
-        targets = torch.zeros((num_models, 10, subsample_size), device=out.device)
-        target_indices = labels.view(1, 1, -1).expand(num_models, -1, -1)
-        targets.scatter_(1, target_indices, 1.0)
+        # Compute targets (10, N)
+        targets = np.zeros((10, subsample_size), dtype=np.float32)
+        targets[labels, np.arange(subsample_size)] = 1.0
 
         # Loss
-        loss = -torch.sum(targets * torch.log(torch.clamp(out, 1e-15, 1 - 1e-15)), dim=[1, 2]) / subsample_size
+        loss = -np.sum(targets[np.newaxis, :, :] * np.log(np.clip(outputs, 1e-15, 1 - 1e-15)), axis=(1, 2)) / subsample_size
 
         # Accuracy
-        preds = torch.argmax(out, dim=1)
-        acc = torch.mean((preds == labels.unsqueeze(0)).float(), dim=1)
+        preds = np.argmax(outputs, axis=1)
+        acc = np.mean(preds == labels[np.newaxis, :], axis=1)
 
-        return loss.detach().cpu().numpy(), acc.detach().cpu().numpy()
+        return loss, acc
 
     def run_generation(self, one_hots: list[tuple[np.ndarray, int, np.ndarray]]) -> None:
         """

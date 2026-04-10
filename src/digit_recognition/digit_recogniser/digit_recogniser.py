@@ -14,33 +14,10 @@
 
 from typing import Any, TypedDict
 from warnings import deprecated
-import torch
 import numpy as np
 
 from ..utils import chance
-from ..utils.constants import IMAGE_SIZE, LOGIT_GAIN, SCALE_MUTATION_FACTOR, SCALE_MUTATION_CHANCE, NEURONS_PER_HIDDEN_LAYER, USE_GPU_ACCEL
-
-# # Set device - prioritize MPS (Apple Silicon), then CUDA, then CPU
-# if torch.backends.mps.is_available():
-#     device_str = 'mps'
-# elif torch.cuda.is_available():
-#     device_str = 'cuda'
-# else:
-#     device_str = 'cpu'
-
-# Set device - prioritize MPS (Apple Silicon), then CUDA, then CPU
-if USE_GPU_ACCEL:
-    if torch.backends.mps.is_available():
-        device_str = 'mps'
-    elif torch.cuda.is_available():
-        device_str = 'cuda'
-    else:
-        device_str = 'cpu'
-else:
-    device_str = 'cpu'
-device = torch.device(device_str)
-
-print(f"Using device: {device_str}")
+from ..utils.constants import IMAGE_SIZE, LOGIT_GAIN, SCALE_MUTATION_FACTOR, SCALE_MUTATION_CHANCE, NEURONS_PER_HIDDEN_LAYER
 
 def leaky_relu(x: np.ndarray) -> np.ndarray:
     return np.where(x > 0, x, 0.01 * x)
@@ -62,22 +39,17 @@ class Layer:
         """Initialise a Layer with a random configuration."""
         # We initialize all weights for the whole layer at once
         # Using "He Initialization" (scaling by sqrt of input size) helps stability
-        self.weights = torch.randn(output_size, input_size) * np.sqrt(2.0 / input_size)
-        self.bias = torch.zeros(output_size, 1)
-        # Move to device
-        if USE_GPU_ACCEL:
-            self.weights = self.weights.to(device)
-            self.bias = self.bias.to(device)
+        self.weights = np.random.randn(output_size, input_size) * np.sqrt(2.0 / input_size)
+        self.bias = np.zeros((output_size, 1), dtype=np.float32)
 
     def shape(self) -> tuple[int, int]:
         """Returns the layer's shape in terms of (out, in)"""
         return self.weights.shape
 
-    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+    def forward(self, inputs: np.ndarray) -> np.ndarray:
         """Process inputs and return outputs dependent on oneself's contents."""
         # inputs: (input_size, batch_size)
-        # weight matrix multiplication + bias
-        return torch.matmul(self.weights, inputs) + self.bias
+        return np.matmul(self.weights, inputs) + self.bias
 
     def intensify(self, scalar: float) -> None:
         """Scale all weights by a scalar. This can be used for hypermutants,
@@ -87,20 +59,15 @@ class Layer:
 
     def mutate(self, rate: float):
         """Generate a slightly different version of oneself."""
-        # Mutate the entire matrix at once using a mask
-        self.weights += torch.randn_like(self.weights) * rate
-        self.bias += torch.randn_like(self.bias) * rate
+        self.weights += np.random.randn(*self.weights.shape).astype(np.float32) * rate
+        self.bias += np.random.randn(*self.bias.shape).astype(np.float32) * rate
 
     def copy(self) -> Layer:
         """Create a new Layer instance that is exactly the same as this one."""
 
-        # Create a blank instance without running __init__
         new = Layer.__new__(Layer)
-
-        # Use torch's .clone() to ensure we aren't just pointing to the same memory
-        # If we didn't use .clone(), mutating the child would also change the parent!
-        new.weights = self.weights.clone()
-        new.bias = self.bias.clone()
+        new.weights = np.copy(self.weights)
+        new.bias = np.copy(self.bias)
 
         return new
 
@@ -152,14 +119,9 @@ class DigitRecogniser:
         # Load layers
         model.layers = []
         for layer_data in data["layers"]:
-            # Create a blank Layer object
-            # Note: We assume the Layer class is defined or we create a dummy
             new_layer = Layer.__new__(Layer)
-            new_layer.weights = torch.tensor(layer_data["weights"])
-            new_layer.bias = torch.tensor(layer_data["bias"])
-            if USE_GPU_ACCEL:
-                new_layer.weights = new_layer.weights.to(device)
-                new_layer.bias = new_layer.bias.to(device)
+            new_layer.weights = np.array(layer_data["weights"], dtype=np.float32)
+            new_layer.bias = np.array(layer_data["bias"], dtype=np.float32)
             model.layers.append(new_layer)
 
         # Metadata
@@ -190,41 +152,30 @@ class DigitRecogniser:
         """Predict for a single image. Not deprecated as it can still be used
         for the test mode, where you can give a model an image and have it predict it."""
 
-        # Ensure input is a column vector (784, 1)
-        out = torch.from_numpy(image_array.flatten()).float().unsqueeze(1)  # (784, 1)
-        if USE_GPU_ACCEL:
-            out = out.to(device)
+        out = image_array.flatten().astype(np.float32).reshape(-1, 1)  # (784, 1)
 
-        # Pass input through each one of the layers
         for i, layer in enumerate(self.layers):
             out = layer.forward(out)
             if i < len(self.layers) - 1:
-                out = torch.where(out > 0, out, 0.01 * out)  # Leaky ReLU
+                out = np.where(out > 0, out, 0.01 * out)
             else:
-                out = torch.softmax(out * LOGIT_GAIN, dim=0)
-        if USE_GPU_ACCEL:
-            return out.squeeze(1).detach().cpu().numpy()
-        return out.squeeze(1).detach().numpy()
+                out = softmax(out * LOGIT_GAIN, axis=0)
+
+        return out.squeeze(1)
 
     def predict_batch(self, image_arrays: np.ndarray) -> np.ndarray:
         """Predict multiple images at once. This improves performance as
         prediction is vectorised."""
 
-        # images shape: (N, 28, 28) or (N, 784)
-        if USE_GPU_ACCEL:
-            X = torch.from_numpy(image_arrays.reshape(image_arrays.shape[0], -1).T).float().to(device)  # (784, N)
-        else:
-            X = torch.from_numpy(image_arrays.reshape(image_arrays.shape[0], -1).T).float()
+        X = image_arrays.reshape(image_arrays.shape[0], -1).T.astype(np.float32)  # (784, N)
         out = X
         for i, layer in enumerate(self.layers):
-            out = layer.forward(out)  # Linear
+            out = layer.forward(out)
             if i < len(self.layers) - 1:
-                out = torch.where(out > 0, out, 0.01 * out)  # Leaky ReLU
-        # Apply softmax
-        out = torch.softmax(out * LOGIT_GAIN, dim=0)
-        if USE_GPU_ACCEL:
-            return out.detach().cpu().numpy()  # (10, N)
-        return out.detach().numpy()
+                out = np.where(out > 0, out, 0.01 * out)
+
+        out = softmax(out * LOGIT_GAIN, axis=0)
+        return out
 
     def mutate(self, rate: float) -> None:
         """Change one's configuration slightly"""
