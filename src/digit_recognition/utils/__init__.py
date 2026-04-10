@@ -13,3 +13,6 @@ def chance(p: float, /) -> bool:
 def clamp(x: float, r: tuple[float, float], /) -> float:
     min_, max_ = r
     return max(min_, min(max_, x))
+
+def lerp(a: float, b: float, t: float) -> float:
+    return a + (b - a) * t

@@ -15,7 +15,7 @@
 from typing import Any, TypedDict
 import numpy as np
 
-from ..utils.constants import STARTING_MUTATION_RATE, NEW_CONFIG_RANGE, IMAGE_SIZE
+from ..utils.constants import NEW_CONFIG_RANGE, IMAGE_SIZE
 
 def sigmoid(x: np.ndarray) -> np.ndarray:
     # NumPy's exp handles entire arrays at once
@@ -46,7 +46,7 @@ class Layer:
         # weight matrix multiplication + bias
         return sigmoid(np.dot(self.weights, inputs) + self.bias)
 
-    def mutate(self, rate=STARTING_MUTATION_RATE):
+    def mutate(self, rate: float):
         """Generate a slightly different version of oneself."""
         # Mutate the entire matrix at once using a mask
         self.weights += np.random.uniform(-rate, rate, self.weights.shape)
@@ -126,7 +126,7 @@ class DigitRecogniser:
 
         return model
 
-    def copy(self) -> DigitRecogniser:
+    def copy(self, preserve_grace: bool = False) -> DigitRecogniser:
         """
         Creates a brand new DigitRecogniser instance with the exact
         same weights, biases and metadata as this one.
@@ -140,7 +140,7 @@ class DigitRecogniser:
 
         # Copy metadata
         new_model.epoch = self.epoch
-        new_model.grace = 0  # don't preserve protection
+        new_model.grace = self.grace if preserve_grace else 0
 
         return new_model
 
@@ -171,7 +171,7 @@ class DigitRecogniser:
                 out = softmax(out)
         return out  # (10, N)
 
-    def mutate(self, rate=STARTING_MUTATION_RATE) -> None:
+    def mutate(self, rate: float) -> None:
         """Change one's configuration slightly"""
         for layer in self.layers:
             layer.mutate(rate)

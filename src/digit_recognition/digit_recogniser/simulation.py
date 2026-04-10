@@ -73,6 +73,8 @@ class Simulation:
         labels = np.array([label for _, label, _ in data], dtype=np.int64)  # (N,)
 
         preds = model.predict_batch(images)  # (10, N)
+
+        # Enable this debug print to check for output saturation
         # print(f"Min: {preds.min():.4f}, Mean: {preds.mean():.4f}, Max: {preds.max():.4f}")
 
         # one-hot targets (10, N)

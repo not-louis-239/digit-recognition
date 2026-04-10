@@ -115,8 +115,29 @@ class SimState(State):
                 font_profile=(self.assets.monospaced_reg, 24)
             )
 
+            # Show raw outputs on a sample image for confidence diagnostics
+            if self.assets.one_hots:
+                sample_idx = self.sim.epoch % len(self.assets.one_hots)
+                sample_img, sample_label, _ = self.assets.one_hots[sample_idx]
+                preds = best.model.predict(sample_img).flatten()
+
+                draw_text(
+                    surface=wn, pos=(WN_W - self.padding, self.padding + 255), horiz_align='right', vert_align='top',
+                    text=f"Raw outputs (sample {sample_idx}, label {sample_label})", colour=(200, 200, 200),
+                    font_profile=(self.assets.monospaced_reg, 20)
+                )
+
+                for i in range(10):
+                    colour = (100, 255, 100) if i == sample_label else (180, 180, 180)
+                    draw_text(
+                        surface=wn, pos=(WN_W - self.padding, self.padding + 280 + i * 18),
+                        horiz_align='right', vert_align='top',
+                        text=f"{i}: {preds[i]:.4f}", colour=colour,
+                        font_profile=(self.assets.monospaced_reg, 18)
+                    )
+
             draw_text(
-                surface=wn, pos=(WN_W - self.padding, self.padding + 260), horiz_align='right', vert_align='top',
+                surface=wn, pos=(WN_W - self.padding, self.padding + 470), horiz_align='right', vert_align='top',
                 text="Best Model (visualised):", colour=(220, 220, 220),
                 font_profile=(self.assets.monospaced_reg, 22)
             )
@@ -132,7 +153,7 @@ class SimState(State):
 
                 total_w = cols * tile_size + (cols - 1) * tile_gap
                 start_x = WN_W - self.padding - total_w
-                start_y = self.padding + 295
+                start_y = self.padding + 505
 
                 for idx, img in enumerate(images):
                     col = idx % cols
