@@ -2,10 +2,10 @@ import numpy as np
 from pathlib import Path
 
 from digit_recognition.utils.dirs import DIRS
-from digit_recognition.utils.custom_types import TrainingDataType
+from digit_recognition.utils.custom_types import RawImagesType
 from ..utils.constants import IMAGE_SIZE
 
-def load_imgs_from_npy(data_path: Path) -> TrainingDataType:
+def load_imgs_from_npy(data_path: Path) -> RawImagesType:
     if not data_path.exists():
         return []
 
@@ -20,7 +20,7 @@ def load_imgs_from_npy(data_path: Path) -> TrainingDataType:
 
     return list(zip(images, labels))
 
-def save_imgs_to_npy(data_path: Path, data: TrainingDataType) -> None:
+def save_imgs_to_npy(data_path: Path, data: RawImagesType) -> None:
     if not data:
         return
 
@@ -40,7 +40,7 @@ def _test():
     import matplotlib.pyplot as _plt
     import random as _r
 
-    data = load_imgs_from_npy((DIRS.assets.training_data / "digits.npy").path())
+    data = load_imgs_from_npy((DIRS.assets.training_data / "digits_training.npy").path())
 
     if not data:
         print("No data found")

@@ -4,6 +4,7 @@ import pygame as pg
 import numpy as np
 from pygame import Surface
 
+from digit_recognition.utils.calculate_params import calculate_num_params
 from digit_recognition.utils.constants import WN_W, WN_H, BASE_SELECTION_PRESSURE, calc_mutation_rate, IMAGE_SIZE
 from digit_recognition.gui.utils.text_utils import draw_text
 from digit_recognition.gui.utils.asset_manager import Assets
@@ -44,7 +45,7 @@ class SimState(State):
         self.notifs.update(dt_s)
 
         if self.sim_running:
-            self.sim.run_generation(self.assets.one_hots)
+            self.sim.run_generation(self.assets.training_data)
 
             if (self.autosave) and (self.sim.last_evals) and (self.sim.epoch % self.autosave_interval == 0):
                 self.notifs.set_msg(text=f"Epoch {self.sim.epoch:,} saved (Autosave)", colour=(100, 255, 100), lifetime_s=1.5)
@@ -111,9 +112,9 @@ class SimState(State):
 
             if not self.minimal_ui:
                 # Show raw outputs on a sample image for confidence diagnostics
-                if self.assets.one_hots:
-                    sample_idx = self.sim.epoch % len(self.assets.one_hots)
-                    sample_img, sample_label, _ = self.assets.one_hots[sample_idx]
+                if self.assets.training_data:
+                    sample_idx = self.sim.epoch % len(self.assets.training_data)
+                    sample_img, sample_label, _ = self.assets.training_data[sample_idx]
                     preds = best.model.predict(sample_img).flatten()
                     model_prediction: int = int(np.argmax(preds))
 
@@ -125,6 +126,7 @@ class SimState(State):
                         font_profile=(self.assets.monospaced_reg, 20)
                     )
 
+                    entry_y = 0  # initialise entry_y so that Pylance doesn't complain about possibly unbound variables
                     for i in range(10):
                         colour = (100, 220, 250) if i == model_prediction else (100, 255, 100) if i == sample_label else (115, 115, 115)
 
@@ -316,20 +318,26 @@ class SimState(State):
                 text=f"Model Shape: {shape}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 22)
             )
 
+            num_params = calculate_num_params(shape)
+            draw_text(
+                surface=wn, pos=(self.padding, left_items_start_y + 65), horiz_align='left', vert_align='top',
+                text=f"({num_params:,} params)", colour=(180, 180, 180), font_profile=(self.assets.monospaced_reg, 18)
+            )
+
             # Show population, mutation rate, selection pressure
             mutation_rate = calc_mutation_rate(self.sim.epoch) * self.sim.season.mutation_modifier
             selection_pressure = BASE_SELECTION_PRESSURE * self.sim.season.selection_pressure_modifier
             population_size = len(self.sim.population)
             draw_text(
-                surface=wn, pos=(self.padding, left_items_start_y + 70), horiz_align='left', vert_align='top',
+                surface=wn, pos=(self.padding, left_items_start_y + 90), horiz_align='left', vert_align='top',
                 text=f"Population: {population_size}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 22)
             )
             draw_text(
-                surface=wn, pos=(self.padding, left_items_start_y + 100), horiz_align='left', vert_align='top',
+                surface=wn, pos=(self.padding, left_items_start_y + 120), horiz_align='left', vert_align='top',
                 text=f"Mutation Rate: {mutation_rate:.4f}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 22)
             )
             draw_text(
-                surface=wn, pos=(self.padding, left_items_start_y + 130), horiz_align='left', vert_align='top',
+                surface=wn, pos=(self.padding, left_items_start_y + 150), horiz_align='left', vert_align='top',
                 text=f"Selection Pressure: {selection_pressure:.2f}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 22)
             )
 
@@ -339,7 +347,7 @@ class SimState(State):
             protected_count = sum(1 for model in self.sim.population if model.grace > 0)
 
             draw_text(
-                surface=wn, pos=(self.padding, left_items_start_y + 160), horiz_align='left', vert_align='top',
+                surface=wn, pos=(self.padding, left_items_start_y + 180), horiz_align='left', vert_align='top',
                 text=f"Elites: {elites_count} | Protected: {protected_count}", colour=(200, 200, 200),
                 font_profile=(self.assets.monospaced_reg, 22)
             )

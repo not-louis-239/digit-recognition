@@ -11,4 +11,5 @@ IntCoord2: TypeAlias = tuple[int, int]
 FontProfile: TypeAlias = tuple[Path | None, int]  # (family, size)
 
 # arrays must be of size (IMAGE_SIZE, IMAGE_SIZE), with an attached label for the correct digit
-TrainingDataType = list[tuple[np.ndarray, int]]
+RawImagesType: TypeAlias = list[tuple[np.ndarray, int]]
+OneHotType: TypeAlias = list[tuple[np.ndarray, int, np.ndarray]]  # (image, correct_digit, one_hot_array)

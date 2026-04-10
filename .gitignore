@@ -20,3 +20,9 @@ Thumbs.db
 
 # Ignore tinkering for now
 assets/config.json
+
+# Artefacts from deprecated scripts
+digits.csv
+*.bak
+*.bkp
+*.log
