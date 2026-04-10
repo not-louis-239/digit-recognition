@@ -72,8 +72,7 @@ class Simulation:
         labels = np.array([label for _, label, _ in data], dtype=np.int64)  # (N,)
 
         preds = model.predict_batch(images)  # (10, N)
-        print(f"Min: {preds.min()}, Mean: {preds.mean()}, Max: {preds.max():.4f}")
-
+        # print(f"Min: {preds.min():.4f}, Mean: {preds.mean():.4f}, Max: {preds.max():.4f}")
 
         # one-hot targets (10, N)
         targets = np.zeros_like(preds)
@@ -96,6 +95,7 @@ class Simulation:
         # Calculate parameters like mutation rate and selection pressure
         mutation_rate = calc_mutation_rate(self.epoch) * self.season.mutation_modifier
         selection_pressure = BASE_SELECTION_PRESSURE * self.season.selection_pressure_modifier
+        print(f"Generation {self.epoch}. Mutation Rate: {mutation_rate:.4f}, Selection Pressure: {selection_pressure:.1f}, Population: {len(self.population)}")
 
         # Calculate fitness for everyone
         # We store them as (loss, model) tuples so we can sort them
@@ -119,9 +119,16 @@ class Simulation:
         new_generation = elites.copy()
 
         while len(new_generation) < POPULATION_SIZE:
-            # Pick a random winner from the elites and have it make an offspring
-            parent = random.choice(elites)
-            new_generation.append(parent.spawn_child(self.epoch + 1, mutation_rate))
+            if random.random() < 0.6:
+                # Sexual reproduction: pick two elite and mate them
+                parent_a = random.choice(elites)
+                parent_b = random.choice([e for e in elites if e is not parent_a])
+                child = parent_a.spawn_child_with_mate(parent_b, self.epoch + 1, mutation_rate)
+            else:
+                # Asexual reproduction: pick a random elite and mutate them
+                parent = random.choice(elites)
+                child = parent.spawn_child(self.epoch + 1, mutation_rate)
+            new_generation.append(child)
 
         self.population = new_generation
 

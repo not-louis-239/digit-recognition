@@ -24,11 +24,13 @@ class Season:
     mutation_modifier: float
     selection_pressure_modifier: float
 
+# Spring, Summer = higher mutation, "easier" environment (less selection pressure)
+# Autumn, Winter = lower mutation (genetic hardening), "harsher" environment (more selection pressure)
 SEASONS: list[Season] = [
     Season(
         name="Spring",
         colour=(100, 255, 100),
-        mutation_modifier=1.1,
+        mutation_modifier=1.35,
         selection_pressure_modifier=0.9
     ),
     Season(

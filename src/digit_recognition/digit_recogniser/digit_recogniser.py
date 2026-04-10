@@ -181,6 +181,29 @@ class DigitRecogniser:
 
         return child
 
+    def spawn_child_with_mate(self, mate: DigitRecogniser, current_epoch: int, mutation_rate: float) -> DigitRecogniser:
+        """Sexual reproduction implementation using layer masks to mix-and-match weights and biases"""
+
+        if mate is self:
+            # When attempting to mate with oneself, it collapses back to asexual reproduction
+            return self.spawn_child(current_epoch, mutation_rate)
+
+        child = self.copy()
+
+        for i in range(len(child.layers)):
+            b = mate.layers[i]
+            c = child.layers[i]
+
+            mask = np.random.randint(0, 2, size=c.weights.shape).astype(bool)
+            c.weights[~mask] = b.weights[~mask]
+
+            bias_mask = np.random.randint(0, 2, size=c.bias.shape).astype(bool)
+            c.bias[~bias_mask] = b.bias[~bias_mask]
+
+        child.mutate(mutation_rate)
+        child.epoch = current_epoch
+        return child
+
     def visualise(self) -> DigitRecogniserVisual:
         """
         Returns visual data of oneself for the GUI to render.

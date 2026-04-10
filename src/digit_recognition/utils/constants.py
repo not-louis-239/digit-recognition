@@ -10,11 +10,11 @@ STARTING_MUTATION_RATE = 0.05
 NEURONS_PER_HIDDEN_LAYER = 16
 
 NUM_HIDDEN_LAYERS = 2
-POPULATION_SIZE = 50
+POPULATION_SIZE = 100
 
 # Only keep the best 1 / selection_pressure models each generation
 # Base selection pressure is modified based on season and in future, possibly other factors
-BASE_SELECTION_PRESSURE = 20
+BASE_SELECTION_PRESSURE = 10
 
 # --- GUI Config ---
 FPS = 60
