@@ -104,6 +104,10 @@ class Simulation:
         targets = np.zeros_like(preds)
         targets[labels, np.arange(labels.size)] = 1.0
 
+        # (Categorical Cross Entropy) Loss with small epsilon to avoid attempting
+        # to take log(0), which would be NaN and cause undefined behaviour in the simulation.
+        # The loss is averaged over the batch size.
+        # Categorical cross entropy loss is best for classification tasks.
         loss = -np.sum(targets * np.log(np.clip(preds, 1e-15, 1 - 1e-15))) / labels.size
 
         # Confidence penalty: reward higher probability on the correct class
@@ -159,7 +163,7 @@ class Simulation:
         targets = np.zeros((10, subsample_size), dtype=np.float32)
         targets[labels, np.arange(subsample_size)] = 1.0
 
-        # Loss
+        # Loss - the loss function used is the same as in evaluate_model
         loss = -np.sum(targets[np.newaxis, :, :] * np.log(np.clip(outputs, 1e-15, 1 - 1e-15)), axis=(1, 2)) / subsample_size
 
         # Accuracy

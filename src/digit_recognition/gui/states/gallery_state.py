@@ -50,7 +50,7 @@ class GalleryState(State):
         self.canvas.clear()
 
     def update(self, dt_s: float) -> None:
-        ...
+        pass
 
     def take_input(self, input_manager: InputManager) -> StateChangeRequest:
         if self.button.check_click(input_manager.events):

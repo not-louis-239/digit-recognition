@@ -19,13 +19,7 @@ import numpy as np
 from ..utils import chance
 from ..utils.constants import IMAGE_SIZE, LOGIT_GAIN, SCALE_MUTATION_FACTOR, SCALE_MUTATION_CHANCE, NEURONS_PER_HIDDEN_LAYER
 
-def leaky_relu(x: np.ndarray) -> np.ndarray:
-    return np.where(x > 0, x, 0.01 * x)
 
-def sigmoid(x: np.ndarray) -> np.ndarray:
-    """This would be deprecated... if not for the fact that some old models use it."""
-    # NumPy's exp handles entire arrays at once
-    return 1 / (1 + np.exp(-x))
 
 def softmax(x: np.ndarray) -> np.ndarray:
     # Stable softmax for vectors or batched matrices.
