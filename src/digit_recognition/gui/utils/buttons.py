@@ -19,11 +19,21 @@ class Button:
         self.x, self.y = pos
         self.w, self.h = size
 
-        self.bg_colour = bg_colour
-        self.fg_colour = fg_colour
-
-        self.text = text
         self.font_profile = font_profile
+        self.set_appearance(bg_colour=bg_colour, fg_colour=fg_colour, text=text)
+
+    def set_appearance(
+            self, *,
+            bg_colour: Colour | None = None,
+            fg_colour: Colour | None = None,
+            text: str | None = None
+        ) -> None:
+        if text is not None:
+            self.text = text
+        if bg_colour is not None:
+            self.bg_colour = bg_colour
+        if fg_colour is not None:
+            self.fg_colour = fg_colour
 
     def contains(self, point: tuple[float, float]) -> bool:
         px, py = point

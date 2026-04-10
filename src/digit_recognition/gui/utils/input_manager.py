@@ -15,5 +15,14 @@ class InputManager:
         self.events = events
         self.prev_keys, self.cur_keys = self.cur_keys, new_keys
 
-    def pressed(self, key: int) -> bool:
+    def is_down(self, key: int) -> bool:
+        """Returns True as long as the key is held"""
+        return self.cur_keys[key]
+
+    def went_down(self, key: int) -> bool:
+        """Returns True on the first frame the key is held down"""
         return self.cur_keys[key] and not self.prev_keys[key]
+
+    def went_up(self, key: int) -> bool:
+        """Returns True on the first frame the key is released"""
+        return not self.cur_keys[key] and self.prev_keys[key]

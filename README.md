@@ -24,7 +24,6 @@ Why did I decide to make this? Because I was bored lol.
 
 To run, simply run the `main.py` file. It will generate a model for you.
 Then have fun making your own AI models.
-(Well, not yet. The project is still in development. `main.py` won't do anything for you yet.)
 
 ## Licence
 
