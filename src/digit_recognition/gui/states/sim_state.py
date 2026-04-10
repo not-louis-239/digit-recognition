@@ -1,6 +1,8 @@
-from pygame import Surface
-import pygame as pg
 import math
+
+import pygame as pg
+import numpy as np
+from pygame import Surface
 
 from digit_recognition.utils.constants import WN_W, WN_H, BASE_SELECTION_PRESSURE, calc_mutation_rate
 from digit_recognition.gui.utils.text_utils import draw_text
@@ -120,6 +122,7 @@ class SimState(State):
                 sample_idx = self.sim.epoch % len(self.assets.one_hots)
                 sample_img, sample_label, _ = self.assets.one_hots[sample_idx]
                 preds = best.model.predict(sample_img).flatten()
+                model_prediction: int = int(np.argmax(preds))
 
                 draw_text(
                     surface=wn, pos=(WN_W - self.padding, self.padding + 255), horiz_align='right', vert_align='top',
@@ -128,7 +131,7 @@ class SimState(State):
                 )
 
                 for i in range(10):
-                    colour = (100, 255, 100) if i == sample_label else (180, 180, 180)
+                    colour = (100, 220, 250) if i == model_prediction else (100, 255, 100) if i == sample_label else (115, 115, 115)
 
                     # Draw bar graph to the left of the text
                     diagnostic_margin_x = 300
@@ -161,7 +164,6 @@ class SimState(State):
                 tile_size = 28 * tile_scale
                 tile_gap = 6
                 cols = max(1, int(math.ceil(math.sqrt(len(images)))))
-                rows = int(math.ceil(len(images) / cols))
 
                 total_w = cols * tile_size + (cols - 1) * tile_gap
                 start_x = WN_W - self.padding - total_w

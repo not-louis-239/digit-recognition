@@ -22,7 +22,15 @@ import numpy as np
 from .digit_recogniser import DigitRecogniser
 from ..utils import chance, clamp
 from ..utils.dirs import DIRS
-from ..utils.constants import POPULATION_SIZE, BASE_SELECTION_PRESSURE, IMMIGRATION_RATE, HYPERMUTATION_RATE, calc_mutation_rate
+from ..utils.constants import (
+    POPULATION_SIZE,
+    BASE_SELECTION_PRESSURE,
+    IMMIGRATION_RATE,
+    HYPERMUTATION_RATE,
+    CONFIDENCE_PENALTY_FACTOR,
+    SMALL_MARGIN_PENALTY_FACTOR,
+    calc_mutation_rate,
+)
 from ..utils.seasons import get_year_and_season
 
 @dataclass
@@ -82,6 +90,20 @@ class Simulation:
         targets[labels, np.arange(labels.size)] = 1.0
 
         loss = -np.sum(targets * np.log(np.clip(preds, 1e-15, 1 - 1e-15))) / labels.size
+
+        # Confidence penalty: reward higher probability on the correct class
+        correct_probs = preds[labels, np.arange(labels.size)]
+        confidence_penalty = np.mean(1.0 - correct_probs)
+
+        # Margin penalty: reward a larger gap between top-1 and top-2 predictions
+        top2 = np.partition(preds, -2, axis=0)
+        top1 = top2[-1]
+        second = top2[-2]
+        margins = top1 - second
+        margin_penalty = np.mean(np.clip(1.0 - margins, 0.0, 1.0))
+
+        loss += CONFIDENCE_PENALTY_FACTOR * confidence_penalty
+        loss += SMALL_MARGIN_PENALTY_FACTOR * margin_penalty
         accuracy = np.mean(np.argmax(preds, axis=0) == labels)
 
         return loss, accuracy
