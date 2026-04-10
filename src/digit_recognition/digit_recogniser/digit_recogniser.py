@@ -21,6 +21,13 @@ def sigmoid(x: np.ndarray) -> np.ndarray:
     # NumPy's exp handles entire arrays at once
     return 1 / (1 + np.exp(-x))
 
+def softmax(x: np.ndarray) -> np.ndarray:
+    # Stable softmax for vectors or batched matrices.
+    # Works with shape (N, 1) or (C, N) where classes are along axis 0.
+    x_max = np.max(x, axis=0, keepdims=True)
+    exp_x = np.exp(x - x_max)
+    return exp_x / np.sum(exp_x, axis=0, keepdims=True)
+
 class Layer:
     def __init__(self, input_size: int, output_size: int) -> None:
         """Initialise a Layer with a random configuration."""
@@ -140,8 +147,10 @@ class DigitRecogniser:
         out = image_array.flatten().reshape(-1, 1)
 
         # Pass input through each one of the layers
-        for layer in self.layers:
+        for i, layer in enumerate(self.layers):
             out = layer.forward(out)
+            if i == len(self.layers) - 1:
+                out = softmax(out)
         return out
 
     def predict_batch(self, image_arrays: np.ndarray) -> np.ndarray:
@@ -151,8 +160,10 @@ class DigitRecogniser:
         # images shape: (N, 28, 28) or (N, 784)
         X = image_arrays.reshape(image_arrays.shape[0], -1).T  # (784, N)
         out = X
-        for layer in self.layers:
+        for i, layer in enumerate(self.layers):
             out = sigmoid(layer.weights @ out + layer.bias)  # (out, N)
+            if i == len(self.layers) - 1:
+                out = softmax(out)
         return out  # (10, N)
 
     def mutate(self, rate=STARTING_MUTATION_RATE) -> None:

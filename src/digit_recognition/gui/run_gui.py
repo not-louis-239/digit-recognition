@@ -39,6 +39,8 @@ class App:
                     for child in incubator_path.iterdir():
                         if not child.is_dir():
                             continue
+                        if not child.name.startswith("epoch_"):
+                            continue
                         json_files = list(child.rglob("*.json"))
                         if not json_files:
                             continue
@@ -67,7 +69,7 @@ class App:
                     self.sim = Simulation()
                     break
 
-                seed: list[dict[str, object]] = []
+                seed: list[dict[str, Any]] = []
                 json_files = sorted(best_dir.rglob("*.json"))
                 for file in json_files:
                     try:
@@ -110,7 +112,7 @@ class App:
                             else:
                                 seed.append(data)
                         except json.JSONDecodeError:
-                            print(f"Warning: skipping corrupted JSON in file: '{file}'")
+                            print(f"Warning: skipping corrupted JSON file: '{file}'")
                     if not seed:
                         print("Error: No valid JSON models found in directory.")
                         continue

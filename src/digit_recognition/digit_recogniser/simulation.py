@@ -72,6 +72,8 @@ class Simulation:
         labels = np.array([label for _, label, _ in data], dtype=np.int64)  # (N,)
 
         preds = model.predict_batch(images)  # (10, N)
+        print(preds.min(), preds.max(), preds.mean())
+
 
         # one-hot targets (10, N)
         targets = np.zeros_like(preds)
@@ -110,7 +112,7 @@ class Simulation:
         print(f"Generation Best Loss: {best_eval.loss:.4f} | Best Acc: {best_eval.accuracy_rate:.4%}")
 
         # Selection: Keep the top 10%. The rest? Goodbye.
-        num_elites = max(1, POPULATION_SIZE // selection_pressure)
+        num_elites: int = int(max(1, POPULATION_SIZE // selection_pressure))
         elites: list[DigitRecogniser] = [e.model for e in results[:num_elites]]
 
         # Repopulation: Fill the rest of the slots with mutated clones
