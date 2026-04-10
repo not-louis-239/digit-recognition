@@ -15,7 +15,8 @@
 from typing import Any, TypedDict
 import numpy as np
 
-from ..utils.constants import NEW_CONFIG_RANGE, IMAGE_SIZE
+from ..utils import chance
+from ..utils.constants import NEW_CONFIG_RANGE, IMAGE_SIZE, LOGIT_GAIN, SCALE_MUTATION_FACTOR, SCALE_MUTATION_CHANCE
 
 def sigmoid(x: np.ndarray) -> np.ndarray:
     # NumPy's exp handles entire arrays at once
@@ -45,6 +46,12 @@ class Layer:
         # inputs: (input_size, 1)
         # weight matrix multiplication + bias
         return sigmoid(np.dot(self.weights, inputs) + self.bias)
+
+    def intensify(self, scalar: float) -> None:
+        """Scale all weights by a scalar. This can be used for hypermutants,
+        immigrants or to give a layer more "oomph" (prediction confidence)."""
+        self.weights *= scalar
+        self.bias *= scalar
 
     def mutate(self, rate: float):
         """Generate a slightly different version of oneself."""
@@ -77,7 +84,7 @@ class DigitRecogniser:
     def __init__(self, epoch: int = 0, grace: int = 0):
         """Creates a new DigitRecogniser with a random configuration"""
         # 784 -> 16 -> 16 -> 10
-        self.layers = [
+        self.layers: list[Layer] = [
             Layer(784, 16),
             Layer(16, 16),
             Layer(16, 10)
@@ -155,7 +162,7 @@ class DigitRecogniser:
         for i, layer in enumerate(self.layers):
             out = layer.forward(out)
             if i == len(self.layers) - 1:
-                out = softmax(out)
+                out = softmax(out * LOGIT_GAIN)
         return out
 
     def predict_batch(self, image_arrays: np.ndarray) -> np.ndarray:
@@ -168,13 +175,17 @@ class DigitRecogniser:
         for i, layer in enumerate(self.layers):
             out = sigmoid(layer.weights @ out + layer.bias)  # (out, N)
             if i == len(self.layers) - 1:
-                out = softmax(out)
+                out = softmax(out * LOGIT_GAIN)
         return out  # (10, N)
 
     def mutate(self, rate: float) -> None:
         """Change one's configuration slightly"""
         for layer in self.layers:
+            # First, additive mutation
             layer.mutate(rate)
+            # Then, multiplicative mutation
+            if chance(SCALE_MUTATION_CHANCE):
+                layer.intensify(SCALE_MUTATION_FACTOR)
 
     def spawn_child(self, current_epoch: int, mutation_rate: float) -> DigitRecogniser:
         """Return a slightly mutated version of oneself.

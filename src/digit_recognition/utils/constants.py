@@ -3,19 +3,28 @@ from ..utils import lerp
 # --- Generic Config ---
 __version__ = "0.1.0"
 
+# --- Softmax/Prediction Config ---
+LOGIT_GAIN = 2
+
 # --- Loss Calculation Config ---
-CONFIDENCE_PENALTY_FACTOR = 1
-SMALL_MARGIN_PENALTY_FACTOR = 1
+CONFIDENCE_PENALTY_FACTOR = 0.6
+SMALL_MARGIN_PENALTY_FACTOR = 0.6
 TARGET_MARGIN = 0.6  # top guess - 2nd top guess
 
 # --- Simulator Config ---
 IMAGE_SIZE = 28
 
-NEW_CONFIG_RANGE = 0.1
+NEW_CONFIG_RANGE = 2.0
 NEURONS_PER_HIDDEN_LAYER = 16
 
 NUM_HIDDEN_LAYERS = 2
 POPULATION_SIZE = 50
+
+SCALE_MUTATION_FACTOR = 1.05
+SCALE_MUTATION_CHANCE = 0.1
+
+# Past this, there will be no new immigrants or hypermutants
+HARDENING_EPOCH = 7500
 
 # Only keep the best 1 / selection_pressure models each generation
 # Base selection pressure is modified based on season and in future, possibly other factors

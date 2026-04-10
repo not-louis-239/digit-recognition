@@ -30,6 +30,7 @@ from ..utils.constants import (
     CONFIDENCE_PENALTY_FACTOR,
     SMALL_MARGIN_PENALTY_FACTOR,
     TARGET_MARGIN,
+    HARDENING_EPOCH,
     calc_mutation_rate,
 )
 from ..utils.seasons import get_year_and_season
@@ -154,10 +155,10 @@ class Simulation:
         new_generation = survivors.copy()
 
         while len(new_generation) < POPULATION_SIZE:
-            if chance(IMMIGRATION_RATE):
+            if self.epoch < HARDENING_EPOCH and chance(IMMIGRATION_RATE):
                 # Immigration: add an entirely new model
                 new = DigitRecogniser(epoch=self.epoch + 1, grace=20)
-            elif chance(HYPERMUTATION_RATE):
+            elif self.epoch < HARDENING_EPOCH and chance(HYPERMUTATION_RATE):
                 # Hypermutation: mutate an existing model by a lot more than usual
                 new = random.choice(survivors).copy()
                 new.grace = 20
