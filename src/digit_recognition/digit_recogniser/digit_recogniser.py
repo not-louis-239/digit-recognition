@@ -15,7 +15,7 @@
 from typing import Any, TypedDict
 import numpy as np
 
-from ..utils.constants import STARTING_MUTATION_RATE, NEW_CONFIG_RANGE
+from ..utils.constants import STARTING_MUTATION_RATE, NEW_CONFIG_RANGE, IMAGE_SIZE
 
 def sigmoid(x: np.ndarray) -> np.ndarray:
     # NumPy's exp handles entire arrays at once
@@ -58,9 +58,13 @@ class Layer:
 
         return new
 
+class FirstLayerVisual(TypedDict):
+    images: list[list[list[float]]]
+    biases: list[float]
+
 class DigitRecogniserVisual(TypedDict):
     layer_sizes: list[int]
-    first_layer: dict[str, list]
+    first_layer: FirstLayerVisual
 
 class DigitRecogniser:
     def __init__(self, epoch: int = 0):
@@ -152,18 +156,17 @@ class DigitRecogniser:
 
         return child
 
-    def visualise(self) -> dict[str, object]:
+    def visualise(self) -> DigitRecogniserVisual:
         """
         Returns visual data of oneself for the GUI to render.
         Arrays are normalized to 0..1 so the UI can colour map easily.
         """
         layer0 = self.layers[0]
-        weights = layer0.weights  # shape (16, 784)
-        # reshape to 16 images of 28x28
-        imgs = weights.reshape(weights.shape[0], 28, 28)
+        weights = layer0.weights  # shape (n, IMAGE_SIZE * IMAGE_SIZE)
+        imgs = weights.reshape(weights.shape[0], IMAGE_SIZE, IMAGE_SIZE)
 
         # normalize each image independently to 0..1 for display
-        norm_imgs = []
+        norm_imgs: list[list[list[float]]] = []
         for img in imgs:
             mn, mx = img.min(), img.max()
             if mx - mn < 1e-6:

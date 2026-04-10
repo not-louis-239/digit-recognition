@@ -1,4 +1,6 @@
 from pygame import Surface
+import pygame as pg
+import math
 
 from digit_recognition.utils.constants import WN_W, WN_H
 from digit_recognition.gui.utils.text_utils import draw_text
@@ -99,6 +101,39 @@ class SimState(State):
                 text=f"Best Acc: {best.accuracy_rate:.2%}", colour=(220, 220, 220),
                 font_profile=(self.assets.monospaced_reg, 24)
             )
+
+            draw_text(
+                surface=wn, pos=(WN_W - self.padding, self.padding + 260), horiz_align='right', vert_align='top',
+                text="Best Model (visualised):", colour=(220, 220, 220),
+                font_profile=(self.assets.monospaced_reg, 22)
+            )
+
+            visual = best.model.visualise()
+            images = visual["first_layer"]["images"]
+            if images:
+                tile_scale = 2
+                tile_size = 28 * tile_scale
+                tile_gap = 6
+                cols = max(1, int(math.ceil(math.sqrt(len(images)))))
+                rows = int(math.ceil(len(images) / cols))
+
+                total_w = cols * tile_size + (cols - 1) * tile_gap
+                start_x = WN_W - self.padding - total_w
+                start_y = self.padding + 295
+
+                for idx, img in enumerate(images):
+                    col = idx % cols
+                    row = idx // cols
+                    x0 = start_x + col * (tile_size + tile_gap)
+                    y0 = start_y + row * (tile_size + tile_gap)
+
+                    for r, row_vals in enumerate(img):
+                        for c, val in enumerate(row_vals):
+                            v = max(0, min(255, int(val * 255)))
+                            pg.draw.rect(
+                                wn, (v, v, v),
+                                (x0 + c * tile_scale, y0 + r * tile_scale, tile_scale, tile_scale)
+                            )
         else:
             draw_text(
                 surface=wn, pos=(WN_W - self.padding, self.padding + 185), horiz_align='right', vert_align='top',
