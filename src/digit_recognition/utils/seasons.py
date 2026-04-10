@@ -58,7 +58,7 @@ def get_season(generation: int) -> Season:
     season_idx = generation % len(SEASONS)
     return SEASONS[season_idx]
 
-def format_year(generation: int) -> tuple[int, Season]:
+def get_year_and_season(generation: int) -> tuple[int, Season]:
     """Returns (year, season)"""
 
     season = get_season(generation)

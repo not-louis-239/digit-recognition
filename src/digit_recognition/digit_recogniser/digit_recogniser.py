@@ -74,7 +74,7 @@ class DigitRecogniserVisual(TypedDict):
     first_layer: FirstLayerVisual
 
 class DigitRecogniser:
-    def __init__(self, epoch: int = 0):
+    def __init__(self, epoch: int = 0, grace: int = 0):
         """Creates a new DigitRecogniser with a random configuration"""
         # 784 -> 16 -> 16 -> 10
         self.layers = [
@@ -84,6 +84,7 @@ class DigitRecogniser:
         ]
 
         self.epoch = epoch  # purely cosmetic, but nice to keep track of
+        self.grace = grace  # determines number of "safety" generations where it can't be culled
 
     def to_json(self) -> dict[str, Any]:
         """Convert the model's layers into a JSON-serializable dictionary."""

@@ -6,7 +6,6 @@ IMAGE_SIZE = 28
 
 NEW_CONFIG_RANGE = 0.1
 STARTING_MUTATION_RATE = 0.05
-
 NEURONS_PER_HIDDEN_LAYER = 16
 
 NUM_HIDDEN_LAYERS = 2
@@ -15,6 +14,9 @@ POPULATION_SIZE = 100
 # Only keep the best 1 / selection_pressure models each generation
 # Base selection pressure is modified based on season and in future, possibly other factors
 BASE_SELECTION_PRESSURE = 10
+
+IMMIGRATION_RATE = 0.01
+HYPERMUTATION_RATE = 0.01
 
 # --- GUI Config ---
 FPS = 60

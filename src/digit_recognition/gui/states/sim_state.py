@@ -8,7 +8,7 @@ from digit_recognition.gui.utils.asset_manager import Assets
 from digit_recognition.gui.utils.buttons import Button
 from digit_recognition.gui.utils.input_manager import InputManager
 from digit_recognition.gui.states import State, StateChangeRequest, StateID
-from digit_recognition.utils.seasons import format_year
+from digit_recognition.utils.seasons import get_year_and_season
 from digit_recognition.digit_recogniser.simulation import Simulation, save_to_dir
 from digit_recognition.gui.utils.ambient_messages import AmbientMessage
 
@@ -154,16 +154,14 @@ class SimState(State):
                 font_profile=(self.assets.monospaced_reg, 24)
             )
 
-        year, season = format_year(self.sim.epoch)
-
         # Show season, year and generation
         draw_text(
             surface=wn, pos=(self.padding, self.padding), horiz_align='left', vert_align='top',
-            text=f"{season.name}", colour=season.colour, font_profile=(self.assets.monospaced_reg, 36)
+            text=f"{self.sim.season.name}", colour=self.sim.season.colour, font_profile=(self.assets.monospaced_reg, 36)
         )
         draw_text(
             surface=wn, pos=(self.padding, self.padding + 60), horiz_align='left', vert_align='top',
-            text=f"Year {year:,}", colour=(255, 255, 255), font_profile=(self.assets.monospaced_reg, 24)
+            text=f"Year {self.sim.year:,}", colour=(255, 255, 255), font_profile=(self.assets.monospaced_reg, 24)
         )
         draw_text(
             surface=wn, pos=(self.padding, self.padding + 90), horiz_align='left', vert_align='top',

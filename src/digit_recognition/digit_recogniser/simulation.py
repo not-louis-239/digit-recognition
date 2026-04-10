@@ -20,9 +20,10 @@ import json
 
 import numpy as np
 from .digit_recogniser import DigitRecogniser
+from ..utils import chance
 from ..utils.dirs import DIRS
-from ..utils.constants import POPULATION_SIZE, BASE_SELECTION_PRESSURE, STARTING_MUTATION_RATE, calc_mutation_rate
-from ..utils.seasons import format_year
+from ..utils.constants import POPULATION_SIZE, BASE_SELECTION_PRESSURE, IMMIGRATION_RATE, HYPERMUTATION_RATE, calc_mutation_rate
+from ..utils.seasons import get_year_and_season
 
 @dataclass
 class Evaluation:
@@ -63,7 +64,7 @@ class Simulation:
                 self.population.append(DigitRecogniser())
                 self.epoch: int = 0
 
-        self.year, self.season = format_year(self.epoch)
+        self.year, self.season = get_year_and_season(self.epoch)
 
     def evaluate_model(self, model: DigitRecogniser, data: list[tuple[np.ndarray, int, np.ndarray]]) -> tuple[float, float]:
         """Returns tuple of (average_loss, accuracy_rate), where 0 <= accuracy_rate <= 1. data is tuple[img, label, one_hot]"""
@@ -92,6 +93,9 @@ class Simulation:
         The strong shall eat the weak, as it is said.
         """
 
+        # First, update year and season. This is required for seasonal effects to update correctly.
+        self.year, self.season = get_year_and_season(self.epoch)
+
         # Calculate parameters like mutation rate and selection pressure
         mutation_rate = calc_mutation_rate(self.epoch) * self.season.mutation_modifier
         selection_pressure = BASE_SELECTION_PRESSURE * self.season.selection_pressure_modifier
@@ -111,26 +115,41 @@ class Simulation:
         best_eval: Evaluation = results[0]
         print(f"Generation Best Loss: {best_eval.loss:.4f} | Best Acc: {best_eval.accuracy_rate:.4%}")
 
-        # Selection: Keep the top 10%. The rest? Goodbye.
-        num_elites: int = int(max(1, POPULATION_SIZE // selection_pressure))
-        elites: list[DigitRecogniser] = [e.model for e in results[:num_elites]]
+        # Selection
+        num_survivors: int = int(max(1, POPULATION_SIZE // selection_pressure))
+
+        max_ok_loss = results[num_survivors - 1].loss
+        survivors: list[DigitRecogniser] = [e.model for e in results if (e.loss < max_ok_loss or e.model.grace > 0)]
+
+        print(f"Found {len(survivors)} survivors.")
 
         # Repopulation: Fill the rest of the slots with mutated clones
-        new_generation = elites.copy()
+        new_generation = survivors.copy()
 
         while len(new_generation) < POPULATION_SIZE:
-            if random.random() < 0.6:
-                # Sexual reproduction: pick two elite and mate them
-                parent_a = random.choice(elites)
-                parent_b = random.choice([e for e in elites if e is not parent_a])
-                child = parent_a.spawn_child_with_mate(parent_b, self.epoch + 1, mutation_rate)
+            if chance(IMMIGRATION_RATE):
+                # Immigration: add an entirely new model
+                new = DigitRecogniser(epoch=self.epoch + 1, grace=20)
+            elif chance(HYPERMUTATION_RATE):
+                # Hypermutation: mutate an existing model by a lot more than usual
+                new = random.choice(survivors).copy()
+                new.grace = 20
+                new.mutate(rate=mutation_rate * 20)
+            elif len(survivors) >= 2 and chance(0.6):
+                # Sexual reproduction: pick two survivors and mate them
+                parent_a, parent_b = random.sample(survivors, 2)
+                new = parent_a.spawn_child_with_mate(parent_b, self.epoch + 1, mutation_rate)
             else:
-                # Asexual reproduction: pick a random elite and mutate them
-                parent = random.choice(elites)
-                child = parent.spawn_child(self.epoch + 1, mutation_rate)
-            new_generation.append(child)
+                # Asexual reproduction: pick a random survivor and mutate them
+                parent = random.choice(survivors)
+                new = parent.spawn_child(self.epoch + 1, mutation_rate)
+            new_generation.append(new)
 
         self.population = new_generation
+
+        # Decrement grace counters for all survivors
+        for individual in self.population:
+            individual.grace = max(0, individual.grace - 1)
 
         self.epoch += 1
 
