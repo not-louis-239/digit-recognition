@@ -51,6 +51,9 @@ class SimState(State):
                 save_to_dir(self.sim.last_evals[:10])
 
     def take_input(self, input_manager: InputManager) -> StateChangeRequest:
+        if input_manager.went_down(pg.K_SPACE):
+            self.sim_running = not self.sim_running
+
         if self.return_button.check_click(input_manager.events):
             return StateChangeRequest(new=StateID.TITLE)
 
@@ -118,7 +121,7 @@ class SimState(State):
 
                     draw_text(
                         surface=wn, pos=(WN_W - self.padding, diagnostic_start_y), horiz_align='right', vert_align='top',
-                        text=f"Raw outputs (sample {sample_idx}, label {sample_label})", colour=(200, 200, 200),
+                        text=f"Raw outputs (i={sample_idx}, ✓={sample_label})", colour=(200, 200, 200),
                         font_profile=(self.assets.monospaced_reg, 20)
                     )
 
