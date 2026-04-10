@@ -273,7 +273,7 @@ def save_to_dir(data: list[Evaluation], dir_path: Path = DIRS.incubator.path()) 
     data.sort(key=lambda ev: ev.loss)  # lowest loss first
 
     for rank, ev in enumerate(data, start=1):
-        filename = f"epoch_{epoch}_rank_{rank}_loss_{ev.loss:.4f}.json"
+        filename = f"epoch_{epoch}__rank_{rank}__loss_{f"{ev.loss:.4f}".replace('.', '_')}.json"
         model_data = ev.model.to_json()
 
         with open(BASE_DIR / filename, "w") as f:

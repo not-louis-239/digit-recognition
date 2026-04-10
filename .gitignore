@@ -1,8 +1,11 @@
+# Ignore training data files (these can get large and bloat the repo)
+assets/training_data/
+
 # Design artefacts
 workflow/
 scripts/
 
-# Saved models
+# "Scratchpad", where candidate models are saved
 incubator/
 
 # Pycaches (these bloat the repo if not .gitignored)
@@ -18,10 +21,7 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Ignore tinkering for now
-assets/config.json
-
-# Artefacts from deprecated scripts
+# Script artefacts (from normal or deprecated scripts)
 digits.csv
 *.bak
 *.bkp

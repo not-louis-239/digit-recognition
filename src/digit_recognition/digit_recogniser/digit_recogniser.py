@@ -22,8 +22,8 @@ from ..utils.constants import IMAGE_SIZE, LOGIT_GAIN, SCALE_MUTATION_FACTOR, SCA
 def leaky_relu(x: np.ndarray) -> np.ndarray:
     return np.where(x > 0, x, 0.01 * x)
 
-@deprecated("Models now use leaky_relu instead of sigmoid for hidden layers, and softmax for output layer. This function is no longer used.")
 def sigmoid(x: np.ndarray) -> np.ndarray:
+    """This would be deprecated... if not for the fact that some old models use it."""
     # NumPy's exp handles entire arrays at once
     return 1 / (1 + np.exp(-x))
 
