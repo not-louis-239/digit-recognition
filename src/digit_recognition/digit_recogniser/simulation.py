@@ -72,7 +72,7 @@ class Simulation:
         labels = np.array([label for _, label, _ in data], dtype=np.int64)  # (N,)
 
         preds = model.predict_batch(images)  # (10, N)
-        print(preds.min(), preds.max(), preds.mean())
+        print(f"Min: {preds.min()}, Mean: {preds.mean()}, Max: {preds.max():.4f}")
 
 
         # one-hot targets (10, N)

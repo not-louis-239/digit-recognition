@@ -24,7 +24,7 @@ def calc_mutation_rate(epoch: int) -> float:
     """Return a smart mutation rate (higher at start, lower as time passes)"""
 
     if epoch > 0:  # Protect against ZeroDivisionError
-        factor = 1 / (epoch ** 0.35)
+        factor = 1 / (epoch ** 0.1)
     else:
         factor = 1
     return STARTING_MUTATION_RATE * factor

@@ -17,7 +17,7 @@ class SimState(State):
         super().__init__(assets)
         self.padding = 30
         self.sim_running: bool = False
-        self.autosave: bool = False
+        self.autosave: bool = True
         self.autosave_interval: int = 500  # autosave when epoch % self.autosave_interval = 0
         self.sim = sim
 
