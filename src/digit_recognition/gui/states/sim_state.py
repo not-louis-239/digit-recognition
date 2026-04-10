@@ -1,5 +1,4 @@
 from pygame import Surface
-from typing import TYPE_CHECKING
 
 from digit_recognition.utils.constants import WN_W, WN_H
 from digit_recognition.gui.utils.text_utils import draw_text
@@ -8,24 +7,27 @@ from digit_recognition.gui.utils.buttons import Button
 from digit_recognition.gui.utils.input_manager import InputManager
 from digit_recognition.gui.states import State, StateChangeRequest, StateID
 from digit_recognition.utils.seasons import format_year
-
-if TYPE_CHECKING:
-    from digit_recognition.digit_recogniser.simulation import Simulation
+from digit_recognition.digit_recogniser.simulation import Simulation, save_to_dir
+from digit_recognition.gui.utils.ambient_messages import AmbientMessage
 
 class SimState(State):
     def __init__(self, assets: Assets, sim: Simulation):
         super().__init__(assets)
         self.padding = 30
-        self.run_button = Button((WN_W - 200 - self.padding, self.padding), (200, 80), "Run")
         self.sim_running: bool = False
         self.sim = sim
 
+        self.run_button = Button((WN_W - 200 - self.padding, self.padding), (200, 80), "Run")
         self.return_button = Button((self.padding, WN_H - 100 - self.padding), (200, 100), "Return")
+        self.save_button = Button((2 * self.padding + 200, WN_H - 100 - self.padding), (300, 100), "Save Models")
+        self.notifs = AmbientMessage()
 
     def reset(self) -> None:
         ...
 
     def update(self, dt_s: float) -> None:
+        self.notifs.update(dt_s)
+
         if self.sim_running:
             self.sim.run_generation(self.assets.training_data)
 
@@ -36,6 +38,14 @@ class SimState(State):
         if self.run_button.check_click(input_manager.events):
             self.sim_running = not self.sim_running
 
+        if self.save_button.check_click(input_manager.events):
+            if self.sim.last_evals:
+                save_to_dir(self.sim.last_evals[:10])  # save the 10 best models
+                self.notifs.set_msg(text="Models saved successfully!", colour=(100, 255, 100), lifetime_s=3)
+            else:
+                # No data to save
+                self.notifs.set_msg(text="No data to save. Press Run to start simulation first!", colour=(255, 100, 100), lifetime_s=2)
+
         return StateChangeRequest()
 
     def draw(self, wn: Surface) -> None:
@@ -44,6 +54,7 @@ class SimState(State):
         # Draw buttons
         self.run_button.draw(wn)
         self.return_button.draw(wn)
+        self.save_button.draw(wn)
 
         # Show running status
         if self.sim_running:
@@ -92,4 +103,10 @@ class SimState(State):
         draw_text(
             surface=wn, pos=(self.padding, self.padding + 90), horiz_align='left', vert_align='top',
             text=f"Generation {self.sim.epoch}", colour=(150, 150, 150), font_profile=(self.assets.monospaced_reg, 24)
+        )
+
+        # Show notification popups
+        draw_text(
+            surface=wn, pos=(self.padding, WN_H - self.padding * 2 - 100), horiz_align='left', vert_align='bottom',
+            text=f"{self.notifs.text}", colour=self.notifs.colour, font_profile=(self.assets.monospaced_reg, 24)
         )

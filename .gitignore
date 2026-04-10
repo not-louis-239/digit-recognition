@@ -1,12 +1,19 @@
+# Design artefacts
 workflow/
 scripts/
 
+# Saved models
+incubator/
+
+# Pycaches (these bloat the repo if not .gitignored)
 __pycache__/
 *.pyc
 
+# Venv, environment vars
 .venv
 *.env
 *.envrc
 
+# Auto-generated junk
 .DS_Store
 Thumbs.db

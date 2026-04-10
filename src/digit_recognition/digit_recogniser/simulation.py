@@ -20,6 +20,7 @@ import json
 
 import numpy as np
 from .digit_recogniser import DigitRecogniser
+from ..utils.dirs import DIRS
 from ..utils.constants import POPULATION_SIZE
 from ..utils.custom_types import TrainingDataType
 
@@ -164,7 +165,7 @@ def load_from_dir(dir_path: Path) -> list[DigitRecogniser]:
 
     return models
 
-def save_to_dir(dir_path: Path, data: list[Evaluation]) -> None:
+def save_to_dir(data: list[Evaluation], dir_path: Path = DIRS.incubator.path()) -> None:
     # Using list[Evaluation] so that can generate filenames based on model performance
 
     epoch = max(ev.model.epoch for ev in data)
