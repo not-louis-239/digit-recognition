@@ -109,8 +109,9 @@ class DigitRecogniser:
 
         # Create instance without calling __init__ (prevents random weight gen)
         model = cls.__new__(cls)
-        model.layers = []
 
+        # Load layers
+        model.layers = []
         for layer_data in data["layers"]:
             # Create a blank Layer object
             # Note: We assume the Layer class is defined or we create a dummy
@@ -119,7 +120,9 @@ class DigitRecogniser:
             new_layer.bias = np.array(layer_data["bias"])
             model.layers.append(new_layer)
 
+        # Metadata
         model.epoch = data["metadata"]["epoch"]
+        model.grace = 0  # models aren't automatically invincible upon reload
 
         return model
 
@@ -137,6 +140,7 @@ class DigitRecogniser:
 
         # Copy metadata
         new_model.epoch = self.epoch
+        new_model.grace = 0  # don't preserve protection
 
         return new_model
 

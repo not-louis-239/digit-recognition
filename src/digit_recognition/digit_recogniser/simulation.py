@@ -20,7 +20,7 @@ import json
 
 import numpy as np
 from .digit_recogniser import DigitRecogniser
-from ..utils import chance
+from ..utils import chance, clamp
 from ..utils.dirs import DIRS
 from ..utils.constants import POPULATION_SIZE, BASE_SELECTION_PRESSURE, IMMIGRATION_RATE, HYPERMUTATION_RATE, calc_mutation_rate
 from ..utils.seasons import get_year_and_season
@@ -99,7 +99,8 @@ class Simulation:
         # Calculate parameters like mutation rate and selection pressure
         mutation_rate = calc_mutation_rate(self.epoch) * self.season.mutation_modifier
         selection_pressure = BASE_SELECTION_PRESSURE * self.season.selection_pressure_modifier
-        print(f"Generation {self.epoch}. Mutation Rate: {mutation_rate:.4f}, Selection Pressure: {selection_pressure:.1f}, Population: {len(self.population)}")
+        len_population = len(self.population)
+        print(f"Generation {self.epoch}. Mutation Rate: {mutation_rate:.4f}, Selection Pressure: {selection_pressure:.1f}, Population: {len_population}")
 
         # Calculate fitness for everyone
         # We store them as (loss, model) tuples so we can sort them
@@ -116,10 +117,11 @@ class Simulation:
         print(f"Generation Best Loss: {best_eval.loss:.4f} | Best Acc: {best_eval.accuracy_rate:.4%}")
 
         # Selection
-        num_survivors: int = int(max(1, POPULATION_SIZE // selection_pressure))
+        num_survivors: int = int(clamp(POPULATION_SIZE // selection_pressure, (1, len_population)))
 
-        max_ok_loss = results[num_survivors - 1].loss
-        survivors: list[DigitRecogniser] = [e.model for e in results if (e.loss < max_ok_loss or e.model.grace > 0)]
+        elite = [e.model for e in results[:num_survivors]]
+        protected = [e.model for e in results if e.model.grace > 0]
+        survivors = list({*elite, *protected})
 
         print(f"Found {len(survivors)} survivors.")
 
