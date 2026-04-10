@@ -27,6 +27,9 @@ def _get(key: str, default):
 # --- Generic Config ---
 __version__ = "0.1.0"
 
+# --- Hardware Config ---
+USE_GPU_ACCEL = bool(_get("USE_GPU_ACCEL", False))
+
 # --- Softmax/Prediction Config ---
 LOGIT_GAIN = float(_get("LOGIT_GAIN", 1))
 

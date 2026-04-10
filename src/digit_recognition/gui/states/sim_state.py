@@ -23,6 +23,7 @@ class SimState(State):
         self.autosave_interval: int = 500  # autosave when epoch % self.autosave_interval = 0
         self.autosave_increment: int = 100
         self.sim = sim
+        self.minimal_ui: bool = False
 
         self.run_button = Button((WN_W - 150 - self.padding, self.padding), (150, 60), "Run", font_profile=(DEFAULT_BUTTON_FONT_FAMILY, 28))
         self.return_button = Button((self.padding, WN_H - 75 - self.padding), (150, 75), "Return", font_profile=(DEFAULT_BUTTON_FONT_FAMILY, 30))
@@ -31,6 +32,8 @@ class SimState(State):
         self.autosave_button = Button((3 * self.padding + 375, WN_H - 75 - self.padding), (250, 75), "Autosave: On", font_profile=(DEFAULT_BUTTON_FONT_FAMILY, 28))
         self.autosave_dec_button = Button((3 * self.padding + 375, WN_H - 120 - self.padding), (120, 35), f"-{self.autosave_increment}", font_profile=(DEFAULT_BUTTON_FONT_FAMILY, 24))
         self.autosave_inc_button = Button((3 * self.padding + 505, WN_H - 120 - self.padding), (120, 35), f"+{self.autosave_increment}", font_profile=(DEFAULT_BUTTON_FONT_FAMILY, 24))
+
+        self.toggle_ui_button = Button((WN_W - 150 - self.padding, WN_H - 75 - self.padding), (150, 75), "Minimal UI", font_profile=(DEFAULT_BUTTON_FONT_FAMILY, 24))
 
         self.notifs = AmbientMessage()
 
@@ -77,6 +80,10 @@ class SimState(State):
         if self.autosave_inc_button.check_click(input_manager.events):
             self.autosave_interval += self.autosave_increment
             self.notifs.set_msg(text=f"Autosave interval: {self.autosave_interval:,} epochs.", colour=(200, 200, 200), lifetime_s=2)
+
+        if self.toggle_ui_button.check_click(input_manager.events):
+            self.minimal_ui = not self.minimal_ui
+            self.toggle_ui_button.set_appearance(text="Full UI" if self.minimal_ui else "Minimal UI")
 
         return StateChangeRequest()
 
@@ -252,12 +259,16 @@ class SimState(State):
             )
 
         # Draw buttons
-        self.run_button.draw(wn)
-        self.return_button.draw(wn)
-        self.save_button.draw(wn)
-        self.autosave_button.draw(wn)
-        self.autosave_dec_button.draw(wn)
-        self.autosave_inc_button.draw(wn)
+        if not self.minimal_ui:
+            self.run_button.draw(wn)
+            self.return_button.draw(wn)
+            self.save_button.draw(wn)
+            self.autosave_button.draw(wn)
+            self.autosave_dec_button.draw(wn)
+            self.autosave_inc_button.draw(wn)
+
+        # Always draw toggle button
+        self.toggle_ui_button.draw(wn)
 
         # Show running status
         if self.sim_running:
@@ -285,52 +296,53 @@ class SimState(State):
             text=f"Generation {self.sim.epoch:,}", colour=(150, 150, 150), font_profile=(self.assets.monospaced_reg, 22)
         )
 
-        # Show autosave status
-        autosave_colour = (100, 255, 100) if self.autosave else (255, 100, 100)
-        autosave_text = f"Every {self.autosave_interval:,} epochs" if self.autosave else "Off"
-        draw_text(
-            surface=wn, pos=(self.padding, left_items_start_y), horiz_align='left', vert_align='top',
-            text=f"Autosave: {autosave_text}", colour=autosave_colour, font_profile=(self.assets.monospaced_reg, 22)
-        )
+        if not self.minimal_ui:
+            # Show autosave status
+            autosave_colour = (100, 255, 100) if self.autosave else (255, 100, 100)
+            autosave_text = f"Every {self.autosave_interval:,} epochs" if self.autosave else "Off"
+            draw_text(
+                surface=wn, pos=(self.padding, left_items_start_y), horiz_align='left', vert_align='top',
+                text=f"Autosave: {autosave_text}", colour=autosave_colour, font_profile=(self.assets.monospaced_reg, 22)
+            )
 
-        # Show shape of the current models as (l0, l1...ln) where ln is the number of neurons in each layer
-        shape = self.sim.population[0].shape()
+            # Show shape of the current models as (l0, l1...ln) where ln is the number of neurons in each layer
+            shape = self.sim.population[0].shape()
 
-        draw_text(
-            surface=wn, pos=(self.padding, left_items_start_y + 40), horiz_align='left', vert_align='top',
-            text=f"Model Shape: {shape}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 22)
-        )
+            draw_text(
+                surface=wn, pos=(self.padding, left_items_start_y + 40), horiz_align='left', vert_align='top',
+                text=f"Model Shape: {shape}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 22)
+            )
 
-        # Show population, mutation rate, selection pressure
-        mutation_rate = calc_mutation_rate(self.sim.epoch) * self.sim.season.mutation_modifier
-        selection_pressure = BASE_SELECTION_PRESSURE * self.sim.season.selection_pressure_modifier
-        population_size = len(self.sim.population)
-        draw_text(
-            surface=wn, pos=(self.padding, left_items_start_y + 70), horiz_align='left', vert_align='top',
-            text=f"Population: {population_size}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 22)
-        )
-        draw_text(
-            surface=wn, pos=(self.padding, left_items_start_y + 100), horiz_align='left', vert_align='top',
-            text=f"Mutation Rate: {mutation_rate:.4f}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 22)
-        )
-        draw_text(
-            surface=wn, pos=(self.padding, left_items_start_y + 130), horiz_align='left', vert_align='top',
-            text=f"Selection Pressure: {selection_pressure:.2f}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 22)
-        )
+            # Show population, mutation rate, selection pressure
+            mutation_rate = calc_mutation_rate(self.sim.epoch) * self.sim.season.mutation_modifier
+            selection_pressure = BASE_SELECTION_PRESSURE * self.sim.season.selection_pressure_modifier
+            population_size = len(self.sim.population)
+            draw_text(
+                surface=wn, pos=(self.padding, left_items_start_y + 70), horiz_align='left', vert_align='top',
+                text=f"Population: {population_size}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 22)
+            )
+            draw_text(
+                surface=wn, pos=(self.padding, left_items_start_y + 100), horiz_align='left', vert_align='top',
+                text=f"Mutation Rate: {mutation_rate:.4f}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 22)
+            )
+            draw_text(
+                surface=wn, pos=(self.padding, left_items_start_y + 130), horiz_align='left', vert_align='top',
+                text=f"Selection Pressure: {selection_pressure:.2f}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 22)
+            )
 
-        # Show population composition: elites, protected
-        # TODO: eventually we'd want this to be retrieved, not computed, but it is not a major problem as it is relatively cheap on the CPU
-        elites_count = clamp(int(population_size // max(1e-12, selection_pressure)), (1, population_size))  # using epsilon minimum to prevent ZeroDivisionError
-        protected_count = sum(1 for model in self.sim.population if model.grace > 0)
+            # Show population composition: elites, protected
+            # TODO: eventually we'd want this to be retrieved, not computed, but it is not a major problem as it is relatively cheap on the CPU
+            elites_count = clamp(int(population_size // max(1e-12, selection_pressure)), (1, population_size))  # using epsilon minimum to prevent ZeroDivisionError
+            protected_count = sum(1 for model in self.sim.population if model.grace > 0)
 
-        draw_text(
-            surface=wn, pos=(self.padding, left_items_start_y + 160), horiz_align='left', vert_align='top',
-            text=f"Elites: {elites_count} | Protected: {protected_count}", colour=(200, 200, 200),
-            font_profile=(self.assets.monospaced_reg, 22)
-        )
+            draw_text(
+                surface=wn, pos=(self.padding, left_items_start_y + 160), horiz_align='left', vert_align='top',
+                text=f"Elites: {elites_count} | Protected: {protected_count}", colour=(200, 200, 200),
+                font_profile=(self.assets.monospaced_reg, 22)
+            )
 
-        # Show notification popups
-        draw_text(
-            surface=wn, pos=(self.padding, WN_H - self.padding * 2 - 100), horiz_align='left', vert_align='bottom',
-            text=f"{self.notifs.text}", colour=self.notifs.colour, font_profile=(self.assets.monospaced_reg, 24)
-        )
+            # Show notification popups
+            draw_text(
+                surface=wn, pos=(self.padding, WN_H - self.padding * 2 - 100), horiz_align='left', vert_align='bottom',
+                text=f"{self.notifs.text}", colour=self.notifs.colour, font_profile=(self.assets.monospaced_reg, 24)
+            )

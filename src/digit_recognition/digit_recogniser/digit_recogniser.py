@@ -18,7 +18,7 @@ import torch
 import numpy as np
 
 from ..utils import chance
-from ..utils.constants import IMAGE_SIZE, LOGIT_GAIN, SCALE_MUTATION_FACTOR, SCALE_MUTATION_CHANCE, NEURONS_PER_HIDDEN_LAYER
+from ..utils.constants import IMAGE_SIZE, LOGIT_GAIN, SCALE_MUTATION_FACTOR, SCALE_MUTATION_CHANCE, NEURONS_PER_HIDDEN_LAYER, USE_GPU_ACCEL
 
 # # Set device - prioritize MPS (Apple Silicon), then CUDA, then CPU
 # if torch.backends.mps.is_available():
@@ -28,8 +28,16 @@ from ..utils.constants import IMAGE_SIZE, LOGIT_GAIN, SCALE_MUTATION_FACTOR, SCA
 # else:
 #     device_str = 'cpu'
 
-# Set device - CPU for now, as GPU overhead may outweigh benefits for small networks/batches
-device_str = 'cpu'
+# Set device - prioritize MPS (Apple Silicon), then CUDA, then CPU
+if USE_GPU_ACCEL:
+    if torch.backends.mps.is_available():
+        device_str = 'mps'
+    elif torch.cuda.is_available():
+        device_str = 'cuda'
+    else:
+        device_str = 'cpu'
+else:
+    device_str = 'cpu'
 device = torch.device(device_str)
 
 print(f"Using device: {device_str}")
@@ -56,6 +64,10 @@ class Layer:
         # Using "He Initialization" (scaling by sqrt of input size) helps stability
         self.weights = torch.randn(output_size, input_size) * np.sqrt(2.0 / input_size)
         self.bias = torch.zeros(output_size, 1)
+        # Move to device
+        if USE_GPU_ACCEL:
+            self.weights = self.weights.to(device)
+            self.bias = self.bias.to(device)
 
     def shape(self) -> tuple[int, int]:
         """Returns the layer's shape in terms of (out, in)"""
@@ -145,6 +157,9 @@ class DigitRecogniser:
             new_layer = Layer.__new__(Layer)
             new_layer.weights = torch.tensor(layer_data["weights"])
             new_layer.bias = torch.tensor(layer_data["bias"])
+            if USE_GPU_ACCEL:
+                new_layer.weights = new_layer.weights.to(device)
+                new_layer.bias = new_layer.bias.to(device)
             model.layers.append(new_layer)
 
         # Metadata
@@ -177,6 +192,8 @@ class DigitRecogniser:
 
         # Ensure input is a column vector (784, 1)
         out = torch.from_numpy(image_array.flatten()).float().unsqueeze(1)  # (784, 1)
+        if USE_GPU_ACCEL:
+            out = out.to(device)
 
         # Pass input through each one of the layers
         for i, layer in enumerate(self.layers):
@@ -185,6 +202,8 @@ class DigitRecogniser:
                 out = torch.where(out > 0, out, 0.01 * out)  # Leaky ReLU
             else:
                 out = torch.softmax(out * LOGIT_GAIN, dim=0)
+        if USE_GPU_ACCEL:
+            return out.squeeze(1).detach().cpu().numpy()
         return out.squeeze(1).detach().numpy()
 
     def predict_batch(self, image_arrays: np.ndarray) -> np.ndarray:
@@ -192,7 +211,10 @@ class DigitRecogniser:
         prediction is vectorised."""
 
         # images shape: (N, 28, 28) or (N, 784)
-        X = torch.from_numpy(image_arrays.reshape(image_arrays.shape[0], -1).T).float()  # (784, N)
+        if USE_GPU_ACCEL:
+            X = torch.from_numpy(image_arrays.reshape(image_arrays.shape[0], -1).T).float().to(device)  # (784, N)
+        else:
+            X = torch.from_numpy(image_arrays.reshape(image_arrays.shape[0], -1).T).float()
         out = X
         for i, layer in enumerate(self.layers):
             out = layer.forward(out)  # Linear
@@ -200,7 +222,9 @@ class DigitRecogniser:
                 out = torch.where(out > 0, out, 0.01 * out)  # Leaky ReLU
         # Apply softmax
         out = torch.softmax(out * LOGIT_GAIN, dim=0)
-        return out.detach().numpy()  # (10, N)
+        if USE_GPU_ACCEL:
+            return out.detach().cpu().numpy()  # (10, N)
+        return out.detach().numpy()
 
     def mutate(self, rate: float) -> None:
         """Change one's configuration slightly"""
