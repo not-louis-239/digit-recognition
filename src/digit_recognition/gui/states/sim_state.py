@@ -106,152 +106,153 @@ class SimState(State):
                 font_profile=(self.assets.monospaced_reg, 24)
             )
 
-            # Show raw outputs on a sample image for confidence diagnostics
-            if self.assets.one_hots:
-                sample_idx = self.sim.epoch % len(self.assets.one_hots)
-                sample_img, sample_label, _ = self.assets.one_hots[sample_idx]
-                preds = best.model.predict(sample_img).flatten()
-                model_prediction: int = int(np.argmax(preds))
+            if not self.minimal_ui:
+                # Show raw outputs on a sample image for confidence diagnostics
+                if self.assets.one_hots:
+                    sample_idx = self.sim.epoch % len(self.assets.one_hots)
+                    sample_img, sample_label, _ = self.assets.one_hots[sample_idx]
+                    preds = best.model.predict(sample_img).flatten()
+                    model_prediction: int = int(np.argmax(preds))
 
-                diagnostic_start_y = self.padding + 290
+                    diagnostic_start_y = self.padding + 290
 
-                draw_text(
-                    surface=wn, pos=(WN_W - self.padding, diagnostic_start_y), horiz_align='right', vert_align='top',
-                    text=f"Raw outputs (sample {sample_idx}, label {sample_label})", colour=(200, 200, 200),
-                    font_profile=(self.assets.monospaced_reg, 20)
-                )
-
-                for i in range(10):
-                    colour = (100, 220, 250) if i == model_prediction else (100, 255, 100) if i == sample_label else (115, 115, 115)
-
-                    # Draw bar graph to the left of the text
-                    diagnostic_margin_x = 300
-                    text_to_bar_padding = 15
-                    bar_graph_size = diagnostic_margin_x - self.padding - text_to_bar_padding
-                    entry_y = diagnostic_start_y + 35 + i * 18
-                    gap = 3
-
-                    pg.draw.rect(surface=wn, color=(0, 0, 0), rect=(WN_W - diagnostic_margin_x + text_to_bar_padding, entry_y + gap, bar_graph_size, 18 - gap))
-                    bar_width = int(clamp(preds[i], (0.0, 1.0)) * bar_graph_size)
-                    pg.draw.rect(surface=wn, color=colour, rect=(WN_W - diagnostic_margin_x + text_to_bar_padding, entry_y + gap, bar_width, 18 - gap))
-
-                    # Draw text
                     draw_text(
-                        surface=wn, pos=(WN_W - diagnostic_margin_x, entry_y),
-                        horiz_align='right', vert_align='top',
-                        text=f"{i}: {preds[i]:.4f}", colour=colour,
-                        font_profile=(self.assets.monospaced_reg, 18)
+                        surface=wn, pos=(WN_W - self.padding, diagnostic_start_y), horiz_align='right', vert_align='top',
+                        text=f"Raw outputs (sample {sample_idx}, label {sample_label})", colour=(200, 200, 200),
+                        font_profile=(self.assets.monospaced_reg, 20)
                     )
 
-                last_y = entry_y
-                draw_text(
-                    surface=wn, pos=(WN_W - self.padding, last_y + 30), horiz_align='right', vert_align='top',
-                    text=f"Top Guess Confidence: {preds[model_prediction]:.4f}", colour=(200, 200, 200),
-                    font_profile=(self.assets.monospaced_reg, 20)
-                )
+                    for i in range(10):
+                        colour = (100, 220, 250) if i == model_prediction else (100, 255, 100) if i == sample_label else (115, 115, 115)
 
-                # Render the sample image so it's clear what the model "saw"
-                sample_scale = 5
-                sample_size = IMAGE_SIZE * sample_scale
-                sample_x = WN_W - self.padding - sample_size
-                sample_y = last_y + 70
-                for r, row_vals in enumerate(sample_img):
-                    for c, val in enumerate(row_vals):
-                        v = max(0, min(255, int(val * 255)))
-                        pg.draw.rect(
-                            wn, (v, v, v),
-                            (sample_x + c * sample_scale, sample_y + r * sample_scale, sample_scale, sample_scale)
+                        # Draw bar graph to the left of the text
+                        diagnostic_margin_x = 300
+                        text_to_bar_padding = 15
+                        bar_graph_size = diagnostic_margin_x - self.padding - text_to_bar_padding
+                        entry_y = diagnostic_start_y + 35 + i * 18
+                        gap = 3
+
+                        pg.draw.rect(surface=wn, color=(0, 0, 0), rect=(WN_W - diagnostic_margin_x + text_to_bar_padding, entry_y + gap, bar_graph_size, 18 - gap))
+                        bar_width = int(clamp(preds[i], (0.0, 1.0)) * bar_graph_size)
+                        pg.draw.rect(surface=wn, color=colour, rect=(WN_W - diagnostic_margin_x + text_to_bar_padding, entry_y + gap, bar_width, 18 - gap))
+
+                        # Draw text
+                        draw_text(
+                            surface=wn, pos=(WN_W - diagnostic_margin_x, entry_y),
+                            horiz_align='right', vert_align='top',
+                            text=f"{i}: {preds[i]:.4f}", colour=colour,
+                            font_profile=(self.assets.monospaced_reg, 18)
                         )
 
-            visual = best.model.visualise()
-            images = visual["first_layer"]["images"]
-            if images:
-                tile_scale = 2
-                tile_size = 28 * tile_scale
-                tile_gap = 6
-                cols = max(1, int(math.ceil(math.sqrt(len(images)))))
-                total_w = cols * tile_size + (cols - 1) * tile_gap
-                if total_w > 400:
-                    tile_scale = 1
-                    tile_size = 28 * tile_scale
-                    total_w = cols * tile_size + (cols - 1) * tile_gap
+                    last_y = entry_y
+                    draw_text(
+                        surface=wn, pos=(WN_W - self.padding, last_y + 30), horiz_align='right', vert_align='top',
+                        text=f"Top Guess Confidence: {preds[model_prediction]:.4f}", colour=(200, 200, 200),
+                        font_profile=(self.assets.monospaced_reg, 20)
+                    )
 
-                x_offset = 20
-                start_x = WN_W // 2 - total_w // 2 + x_offset
-                start_y = left_items_start_y + 80
+                    # Render the sample image so it's clear what the model "saw"
+                    sample_scale = 5
+                    sample_size = IMAGE_SIZE * sample_scale
+                    sample_x = WN_W - self.padding - sample_size
+                    sample_y = last_y + 70
+                    for r, row_vals in enumerate(sample_img):
+                        for c, val in enumerate(row_vals):
+                            v = max(0, min(255, int(val * 255)))
+                            pg.draw.rect(
+                                wn, (v, v, v),
+                                (sample_x + c * sample_scale, sample_y + r * sample_scale, sample_scale, sample_scale)
+                            )
+
+                visual = best.model.visualise()
+                images = visual["first_layer"]["images"]
+                if images:
+                    tile_scale = 2
+                    tile_size = 28 * tile_scale
+                    tile_gap = 6
+                    cols = max(1, int(math.ceil(math.sqrt(len(images)))))
+                    total_w = cols * tile_size + (cols - 1) * tile_gap
+                    if total_w > 400:
+                        tile_scale = 1
+                        tile_size = 28 * tile_scale
+                        total_w = cols * tile_size + (cols - 1) * tile_gap
+
+                    x_offset = 20
+                    start_x = WN_W // 2 - total_w // 2 + x_offset
+                    start_y = left_items_start_y + 80
+
+                    draw_text(
+                        surface=wn, pos=(WN_W // 2 + x_offset, left_items_start_y + 30), horiz_align='centre', vert_align='top',
+                        text="Best Model (visualised):", colour=(220, 220, 220),
+                        font_profile=(self.assets.monospaced_reg, 22)
+                    )
+
+                    for idx, img in enumerate(images):
+                        col = idx % cols
+                        row = idx // cols
+                        x0 = start_x + col * (tile_size + tile_gap)
+                        y0 = start_y + row * (tile_size + tile_gap)
+
+                        # Create surface from image array for efficient rendering
+                        img_array = np.array(img)
+                        pixel_array = (img_array * 255).astype(np.uint8)
+                        rgb_array = np.stack([pixel_array] * 3, axis=-1)
+                        surf = pg.surfarray.make_surface(rgb_array)
+                        if tile_scale != 1:
+                            surf = pg.transform.scale(surf, (tile_size, tile_size))
+                        wn.blit(surf, (x0, y0))
+
+                # Show loss distribution as bar graph with lowest loss on the left
+                losses = [ev.loss for ev in self.sim.last_evals]
+                min_loss = min(losses)
+                max_loss = max(losses)
+                spread = max(max_loss - min_loss, 1e-8)
+
+                graph_w = 520
+                graph_h = 120
+                graph_x = (WN_W - graph_w) // 2 + 40
+                graph_y = self.padding + 20
+
+                pg.draw.rect(wn, (45, 45, 60), (graph_x, graph_y, graph_w, graph_h))
+
+                bar_w = max(1, graph_w / max(1, len(losses)))
+                for i, ev in enumerate(self.sim.last_evals):
+                    norm = (ev.loss - min_loss) / spread
+                    bar_h = int(norm * graph_h)
+                    x = graph_x + i * bar_w
+                    y = graph_y + (graph_h - bar_h)
+                    colour = (100, 255, 100) if ev.model.grace > 0 else (140, 200, 255)
+                    pg.draw.rect(wn, colour, (x, y, bar_w + 1, bar_h))  # +1 removes gaps
 
                 draw_text(
-                    surface=wn, pos=(WN_W // 2 + x_offset, left_items_start_y + 30), horiz_align='centre', vert_align='top',
-                    text="Best Model (visualised):", colour=(220, 220, 220),
-                    font_profile=(self.assets.monospaced_reg, 22)
+                    surface=wn, pos=(graph_x, graph_y - 6), horiz_align='left', vert_align='bottom',
+                    text="Loss Distribution (best → worst)", colour=(180, 180, 180),
+                    font_profile=(self.assets.monospaced_reg, 18)
                 )
 
-                for idx, img in enumerate(images):
-                    col = idx % cols
-                    row = idx // cols
-                    x0 = start_x + col * (tile_size + tile_gap)
-                    y0 = start_y + row * (tile_size + tile_gap)
+                draw_text(
+                    surface=wn, pos=(graph_x - 10, graph_y), horiz_align='right', vert_align='centre',
+                    text=f"{max_loss:.4f}", colour=(180, 180, 180),
+                    font_profile=(self.assets.monospaced_reg, 18)
+                )
 
-                    # Create surface from image array for efficient rendering
-                    img_array = np.array(img)
-                    pixel_array = (img_array * 255).astype(np.uint8)
-                    rgb_array = np.stack([pixel_array] * 3, axis=-1)
-                    surf = pg.surfarray.make_surface(rgb_array)
-                    if tile_scale != 1:
-                        surf = pg.transform.scale(surf, (tile_size, tile_size))
-                    wn.blit(surf, (x0, y0))
+                draw_text(
+                    surface=wn, pos=(graph_x - 10, graph_y + graph_h), horiz_align='right', vert_align='centre',
+                    text=f"{min_loss:.4f}", colour=(180, 180, 180),
+                    font_profile=(self.assets.monospaced_reg, 18)
+                )
 
-            # Show loss distribution as bar graph with lowest loss on the left
-            losses = [ev.loss for ev in self.sim.last_evals]
-            min_loss = min(losses)
-            max_loss = max(losses)
-            spread = max(max_loss - min_loss, 1e-8)
-
-            graph_w = 520
-            graph_h = 120
-            graph_x = (WN_W - graph_w) // 2 + 40
-            graph_y = self.padding + 20
-
-            pg.draw.rect(wn, (45, 45, 60), (graph_x, graph_y, graph_w, graph_h))
-
-            bar_w = max(1, graph_w / max(1, len(losses)))
-            for i, ev in enumerate(self.sim.last_evals):
-                norm = (ev.loss - min_loss) / spread
-                bar_h = int(norm * graph_h)
-                x = graph_x + i * bar_w
-                y = graph_y + (graph_h - bar_h)
-                colour = (100, 255, 100) if ev.model.grace > 0 else (140, 200, 255)
-                pg.draw.rect(wn, colour, (x, y, bar_w + 1, bar_h))  # +1 removes gaps
-
-            draw_text(
-                surface=wn, pos=(graph_x, graph_y - 6), horiz_align='left', vert_align='bottom',
-                text="Loss Distribution (best → worst)", colour=(180, 180, 180),
-                font_profile=(self.assets.monospaced_reg, 18)
-            )
-
-            draw_text(
-                surface=wn, pos=(graph_x - 10, graph_y), horiz_align='right', vert_align='centre',
-                text=f"{max_loss:.4f}", colour=(180, 180, 180),
-                font_profile=(self.assets.monospaced_reg, 18)
-            )
-
-            draw_text(
-                surface=wn, pos=(graph_x - 10, graph_y + graph_h), horiz_align='right', vert_align='centre',
-                text=f"{min_loss:.4f}", colour=(180, 180, 180),
-                font_profile=(self.assets.monospaced_reg, 18)
-            )
-
-            draw_text(
-                surface=wn, pos=(graph_x - 10, graph_y + graph_h // 2 - 12), horiz_align='right', vert_align='centre',
-                text=f"r={max_loss - min_loss:.4f}", colour=(255, 255, 255),
-                font_profile=(self.assets.monospaced_reg, 18)
-            )
-            draw_text(
-                surface=wn, pos=(graph_x - 10, graph_y + graph_h // 2 + 12), horiz_align='right', vert_align='centre',
-                text=f"{(max_loss - min_loss) / max_loss:.2%}", colour=(255, 255, 255),
-                font_profile=(self.assets.monospaced_reg, 18)
-            )
-        else:
+                draw_text(
+                    surface=wn, pos=(graph_x - 10, graph_y + graph_h // 2 - 12), horiz_align='right', vert_align='centre',
+                    text=f"r={max_loss - min_loss:.4f}", colour=(255, 255, 255),
+                    font_profile=(self.assets.monospaced_reg, 18)
+                )
+                draw_text(
+                    surface=wn, pos=(graph_x - 10, graph_y + graph_h // 2 + 12), horiz_align='right', vert_align='centre',
+                    text=f"{(max_loss - min_loss) / max_loss:.2%}", colour=(255, 255, 255),
+                    font_profile=(self.assets.monospaced_reg, 18)
+                )
+        elif not self.minimal_ui:
             draw_text(
                 surface=wn, pos=(WN_W - self.padding, self.padding + 185), horiz_align='right', vert_align='top',
                 text="Press Run to start the simulation.", colour=(220, 220, 220),
@@ -270,17 +271,18 @@ class SimState(State):
         # Always draw toggle button
         self.toggle_ui_button.draw(wn)
 
-        # Show running status
-        if self.sim_running:
-            text = "Sim: Running"
-            colour = (100, 255, 100)
-        else:
-            text = "Sim: Paused"
-            colour = (255, 100, 100)
-        draw_text(
-            surface=wn, pos=(WN_W - self.padding, self.padding + 110), horiz_align='right', vert_align='top',
-            text=text, colour=colour, font_profile=(self.assets.monospaced_reg, 36)
-        )
+        if not self.minimal_ui:
+            # Show running status
+            if self.sim_running:
+                text = "Sim: Running"
+                colour = (100, 255, 100)
+            else:
+                text = "Sim: Paused"
+                colour = (255, 100, 100)
+            draw_text(
+                surface=wn, pos=(WN_W - self.padding, self.padding + 110), horiz_align='right', vert_align='top',
+                text=text, colour=colour, font_profile=(self.assets.monospaced_reg, 36)
+            )
 
         # Show season, year and generation
         draw_text(

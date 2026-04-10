@@ -159,7 +159,7 @@ class DigitRecogniser:
             if i < len(self.layers) - 1:
                 out = np.where(out > 0, out, 0.01 * out)
             else:
-                out = softmax(out * LOGIT_GAIN, axis=0)
+                out = softmax(out * LOGIT_GAIN)
 
         return out.squeeze(1)
 
@@ -174,7 +174,7 @@ class DigitRecogniser:
             if i < len(self.layers) - 1:
                 out = np.where(out > 0, out, 0.01 * out)
 
-        out = softmax(out * LOGIT_GAIN, axis=0)
+        out = softmax(out * LOGIT_GAIN)
         return out
 
     def mutate(self, rate: float) -> None:

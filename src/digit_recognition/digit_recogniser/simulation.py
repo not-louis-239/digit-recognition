@@ -129,7 +129,7 @@ class Simulation:
         images = np.stack([img for img, *_ in data], dtype=np.float32)
         labels = np.array([label for _, label, _ in data], dtype=np.int64)
 
-        self._cached_images = images.reshape(images.shape[0], -1).T
+        self._cached_images = images.reshape(images.shape[0], -1).astype(np.float32)
         self._cached_labels = labels
         self._cached_training_data_id = data_id
 
@@ -144,7 +144,7 @@ class Simulation:
         num_samples = self._cached_labels.shape[0]
         indices = random.sample(range(num_samples), subsample_size)
 
-        images = self._cached_images[:, indices]
+        images = self._cached_images[indices]
         labels = self._cached_labels[indices]
 
         # Forward pass for all models in batch
