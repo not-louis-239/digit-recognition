@@ -24,10 +24,6 @@ from ..utils.dirs import DIRS
 from ..utils.constants import POPULATION_SIZE, SELECTION_PRESSURE
 from ..utils.custom_types import TrainingDataType
 
-def calculate_loss(correct: np.ndarray, actual: np.ndarray) -> float:
-    """Calculate the Mean Squared Error"""
-    assert correct.shape == actual.shape
-    return np.mean((correct - actual) ** 2, dtype=np.float64)
 
 @dataclass
 class Evaluation:
@@ -71,28 +67,21 @@ class Simulation:
             self.epoch: int = 0
 
     def evaluate_model(self, model: DigitRecogniser, data: list[tuple[np.ndarray, int, np.ndarray]]) -> tuple[float, float]:
-        """Returns tuple of (average_loss, accuracy_rate), where 0 <= accuracy_rate <= 1."""
+        """Returns tuple of (average_loss, accuracy_rate), where 0 <= accuracy_rate <= 1. data is tuple[img, label, one_hot]"""
 
-        total_loss: float = 0.0
-        correct_guesses: int = 0
-        total_samples: int = len(data)
+        images = np.array([img for img, *_ in data], dtype=np.float32)  # (N, 28, 28)
+        labels = np.array([label for _, label, _ in data], dtype=np.int64)  # (N,)
 
-        for image, correct_num, one_hot in data:
-            # Get Prediction
-            prediction = model.predict(image) # Returns (10, 1) array of probabilities
+        preds = model.predict_batch(images)  # (10, N)
 
-            # Calculate Loss for this specific image
-            total_loss += calculate_loss(one_hot, prediction)
+        # one-hot targets (10, N)
+        targets = np.zeros_like(preds)
+        targets[labels, np.arange(labels.size)] = 1.0
 
-            # Check Accuracy
-            # np.argmax finds the index of the highest value (the model's "choice")
-            if np.argmax(prediction) == correct_num:
-                correct_guesses += 1
+        loss = -np.sum(targets * np.log(np.clip(preds, 1e-15, 1 - 1e-15))) / labels.size
+        accuracy = np.mean(np.argmax(preds, axis=0) == labels)
 
-        average_loss = total_loss / total_samples
-        accuracy_rate = correct_guesses / total_samples
-
-        return (average_loss, accuracy_rate)
+        return loss, accuracy
 
     def run_generation(self, one_hots: list[tuple[np.ndarray, int, np.ndarray]]) -> None:
         """

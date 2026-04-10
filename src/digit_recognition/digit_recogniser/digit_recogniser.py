@@ -133,6 +133,9 @@ class DigitRecogniser:
         return new_model
 
     def predict(self, image_array: np.ndarray) -> np.ndarray:
+        """Predict for a single image. Not deprecated as it can still be used
+        for the test mode, where you can give a model an image and have it predict it."""
+
         # Ensure input is a column vector (784, 1)
         out = image_array.flatten().reshape(-1, 1)
 
@@ -140,6 +143,17 @@ class DigitRecogniser:
         for layer in self.layers:
             out = layer.forward(out)
         return out
+
+    def predict_batch(self, image_arrays: np.ndarray) -> np.ndarray:
+        """Predict multiple images at once. This improves performance as
+        prediction is vectorised."""
+
+        # images shape: (N, 28, 28) or (N, 784)
+        X = image_arrays.reshape(image_arrays.shape[0], -1).T  # (784, N)
+        out = X
+        for layer in self.layers:
+            out = sigmoid(layer.weights @ out + layer.bias)  # (out, N)
+        return out  # (10, N)
 
     def mutate(self, rate=STARTING_MUTATION_RATE) -> None:
         """Change one's configuration slightly"""

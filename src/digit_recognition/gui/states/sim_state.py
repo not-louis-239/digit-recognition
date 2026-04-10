@@ -18,7 +18,7 @@ class SimState(State):
         self.padding = 30
         self.sim_running: bool = False
         self.autosave: bool = False
-        self.autosave_interval: int = 50  # autosave when epoch % self.autosave_interval = 0
+        self.autosave_interval: int = 500  # autosave when epoch % self.autosave_interval = 0
         self.sim = sim
 
         self.run_button = Button((WN_W - 200 - self.padding, self.padding), (200, 80), "Run")
@@ -63,17 +63,17 @@ class SimState(State):
             self.autosave = not self.autosave
             self.autosave_button.set_appearance(text=f"Autosave: {'On' if self.autosave else 'Off'}")
             if self.autosave:
-                self.notifs.set_msg(text=f"Autosave enabled (every {self.autosave_interval} epochs).", colour=(100, 255, 100), lifetime_s=2)
+                self.notifs.set_msg(text=f"Autosave enabled (every {self.autosave_interval:,} epochs).", colour=(100, 255, 100), lifetime_s=2)
             else:
                 self.notifs.set_msg(text="Autosave disabled.", colour=(255, 200, 100), lifetime_s=2)
 
         if self.autosave_dec_button.check_click(input_manager.events):
-            self.autosave_interval = max(10, self.autosave_interval - 10)
-            self.notifs.set_msg(text=f"Autosave interval: {self.autosave_interval} epochs.", colour=(200, 200, 200), lifetime_s=2)
+            self.autosave_interval = max(100, self.autosave_interval - 100)
+            self.notifs.set_msg(text=f"Autosave interval: {self.autosave_interval:,} epochs.", colour=(200, 200, 200), lifetime_s=2)
 
         if self.autosave_inc_button.check_click(input_manager.events):
-            self.autosave_interval += 10
-            self.notifs.set_msg(text=f"Autosave interval: {self.autosave_interval} epochs.", colour=(200, 200, 200), lifetime_s=2)
+            self.autosave_interval += 100
+            self.notifs.set_msg(text=f"Autosave interval: {self.autosave_interval:,} epochs.", colour=(200, 200, 200), lifetime_s=2)
 
         return StateChangeRequest()
 
@@ -106,7 +106,7 @@ class SimState(State):
             best = self.sim.last_evals[0]
             draw_text(
                 surface=wn, pos=(WN_W - self.padding, self.padding + 185), horiz_align='right', vert_align='top',
-                text=f"Best Loss: {best.loss:.4g}", colour=(220, 220, 220),
+                text=f"Best Loss: {best.loss:.4f}", colour=(220, 220, 220),
                 font_profile=(self.assets.monospaced_reg, 24)
             )
             draw_text(
@@ -173,7 +173,7 @@ class SimState(State):
         autosave_colour = (100, 255, 100) if self.autosave else (255, 100, 100)
         draw_text(
             surface=wn, pos=(self.padding, self.padding + 140), horiz_align='left', vert_align='top',
-            text=f"Autosave: {f"Every {self.autosave_interval} epochs" if self.autosave else "Off"}", colour=autosave_colour, font_profile=(self.assets.monospaced_reg, 24)
+            text=f"Autosave: {f"Every {self.autosave_interval:,} epochs" if self.autosave else "Off"}", colour=autosave_colour, font_profile=(self.assets.monospaced_reg, 24)
         )
 
         # Show notification popups
