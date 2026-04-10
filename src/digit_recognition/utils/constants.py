@@ -3,6 +3,10 @@ from ..utils import lerp
 # --- Generic Config ---
 __version__ = "0.1.0"
 
+# --- Loss Calculation Config ---
+CONFIDENCE_PENALTY_FACTOR = 0.5
+SMALL_MARGIN_PENALTY_FACTOR = 0.2
+
 # --- Simulator Config ---
 IMAGE_SIZE = 28
 

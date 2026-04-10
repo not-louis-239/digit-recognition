@@ -129,8 +129,20 @@ class SimState(State):
 
                 for i in range(10):
                     colour = (100, 255, 100) if i == sample_label else (180, 180, 180)
+
+                    # Draw bar graph to the left of the text
+                    diagnostic_margin_x = 300
+                    text_to_bar_padding = 15
+                    bar_graph_size = diagnostic_margin_x - self.padding - text_to_bar_padding
+                    entry_y = self.padding + 280 + i * 18
+                    gap = 3
+
+                    pg.draw.rect(surface=wn, color=(0, 0, 0), rect=(WN_W - diagnostic_margin_x + text_to_bar_padding, entry_y + gap, bar_graph_size, 18 - gap))
+                    pg.draw.rect(surface=wn, color=colour, rect=(WN_W - diagnostic_margin_x + text_to_bar_padding, entry_y + gap, bar_graph_size * preds[i], 18 - gap))
+
+                    # Draw text
                     draw_text(
-                        surface=wn, pos=(WN_W - self.padding, self.padding + 280 + i * 18),
+                        surface=wn, pos=(WN_W - diagnostic_margin_x, entry_y),
                         horiz_align='right', vert_align='top',
                         text=f"{i}: {preds[i]:.4f}", colour=colour,
                         font_profile=(self.assets.monospaced_reg, 18)
