@@ -26,9 +26,11 @@ def _get(key: str, default):
 
 # --- Generic Config ---
 __version__ = "0.1.0"
+VERSION = __version__
 
-# --- Hardware Config ---
-USE_GPU_ACCEL = bool(_get("USE_GPU_ACCEL", False))
+# --- Canvas Config ---
+BRUSH_SIZE = 3.2
+BRUSH_STRENGTH = 20  # intensity increase per second of drawing on the same pixel
 
 # --- Softmax/Prediction Config ---
 LOGIT_GAIN = float(_get("LOGIT_GAIN", 1))

@@ -16,3 +16,6 @@ def clamp(x: float, r: tuple[float, float], /) -> float:
 
 def lerp(a: float, b: float, t: float) -> float:
     return a + (b - a) * t
+
+def invlerp(a: float, b: float, v: float) -> float:
+    return (v - a) / (b - a) if b != a else 0
