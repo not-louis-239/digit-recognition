@@ -157,7 +157,9 @@ class SimState(State):
                     # Render the sample image so it's clear what the model "saw"
                     sample_scale = 5
                     sample_size = IMAGE_SIZE * sample_scale
-                    sample_x = WN_W - self.padding - sample_size
+
+                    x_offset = -180
+                    sample_x = WN_W - self.padding - sample_size + x_offset
                     sample_y = last_y + 70
                     for r, row_vals in enumerate(sample_img):
                         for c, val in enumerate(row_vals):
@@ -263,29 +265,25 @@ class SimState(State):
             )
 
         # Draw buttons
-        if not self.minimal_ui:
-            self.run_button.draw(wn)
-            self.return_button.draw(wn)
-            self.save_button.draw(wn)
-            self.autosave_button.draw(wn)
-            self.autosave_dec_button.draw(wn)
-            self.autosave_inc_button.draw(wn)
-
-        # Always draw toggle button
+        self.run_button.draw(wn)
+        self.return_button.draw(wn)
+        self.save_button.draw(wn)
+        self.autosave_button.draw(wn)
+        self.autosave_dec_button.draw(wn)
+        self.autosave_inc_button.draw(wn)
         self.toggle_ui_button.draw(wn)
 
-        if not self.minimal_ui:
-            # Show running status
-            if self.sim_running:
-                text = "Sim: Running"
-                colour = (100, 255, 100)
-            else:
-                text = "Sim: Paused"
-                colour = (255, 100, 100)
-            draw_text(
-                surface=wn, pos=(WN_W - self.padding, self.padding + 110), horiz_align='right', vert_align='top',
-                text=text, colour=colour, font_profile=(self.assets.monospaced_reg, 36)
-            )
+        # Show running status
+        if self.sim_running:
+            text = "Sim: Running"
+            colour = (100, 255, 100)
+        else:
+            text = "Sim: Paused"
+            colour = (255, 100, 100)
+        draw_text(
+            surface=wn, pos=(WN_W - self.padding, self.padding + 110), horiz_align='right', vert_align='top',
+            text=text, colour=colour, font_profile=(self.assets.monospaced_reg, 36)
+        )
 
         # Show season, year and generation
         draw_text(
