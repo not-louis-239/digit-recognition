@@ -16,16 +16,75 @@ from digit_recognition.gui.states.gallery_state import GalleryState
 from digit_recognition.gui.utils.input_manager import InputManager
 from digit_recognition.gui.utils.asset_manager import Assets
 from digit_recognition.utils.constants import WN_W, WN_H, FPS
+from digit_recognition.utils.dirs import DIRS
 
 class App:
     def __init__(self) -> None:
-        print("Enter a seed JSON file or directory to start the simulation (or Enter to start fresh)")
+        print("Enter a seed JSON file or directory to start the simulation.")
+        print("Press Enter to resume from the latest incubator run, or type START_FRESH to start fresh.")
 
         while True:
             seed_path_str = input("> ").strip()
 
-            if not seed_path_str:
+            if seed_path_str == "START_FRESH":
                 self.sim = Simulation()
+                break
+
+            if not seed_path_str:
+                incubator_path = DIRS.incubator.path()
+                best_dir: Path | None = None
+                best_epoch = -1
+
+                if incubator_path.exists() and incubator_path.is_dir():
+                    for child in incubator_path.iterdir():
+                        if not child.is_dir():
+                            continue
+                        json_files = list(child.rglob("*.json"))
+                        if not json_files:
+                            continue
+                        max_epoch_in_dir = -1
+                        for file in json_files:
+                            try:
+                                with open(file, "r") as f:
+                                    data = json.load(f)
+                                if isinstance(data, dict):
+                                    epoch = int(data.get("metadata", {}).get("epoch", -1))
+                                    if epoch > max_epoch_in_dir:
+                                        max_epoch_in_dir = epoch
+                                elif isinstance(data, list):
+                                    for item in data:
+                                        if isinstance(item, dict):
+                                            epoch = int(item.get("metadata", {}).get("epoch", -1))
+                                            if epoch > max_epoch_in_dir:
+                                                max_epoch_in_dir = epoch
+                            except json.JSONDecodeError:
+                                continue
+                        if max_epoch_in_dir > best_epoch:
+                            best_epoch = max_epoch_in_dir
+                            best_dir = child
+
+                if best_dir is None:
+                    self.sim = Simulation()
+                    break
+
+                seed: list[dict[str, object]] = []
+                json_files = sorted(best_dir.rglob("*.json"))
+                for file in json_files:
+                    try:
+                        with open(file, "r") as f:
+                            data = json.load(f)
+                        if isinstance(data, list):
+                            seed.extend(data)
+                        else:
+                            seed.append(data)
+                    except json.JSONDecodeError:
+                        print(f"Warning: skipping corrupted JSON in file: '{file}'")
+                if not seed:
+                    self.sim = Simulation()
+                    break
+
+                print(f"Auto-resuming from incubator: {best_dir}")
+                self.sim = Simulation(seed)
                 break
 
             seed_path = Path(seed_path_str)

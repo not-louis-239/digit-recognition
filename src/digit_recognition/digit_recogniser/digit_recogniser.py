@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any
+from typing import Any, TypedDict
 import numpy as np
 
 from ..utils.constants import STARTING_MUTATION_RATE, NEW_CONFIG_RANGE
@@ -57,6 +57,10 @@ class Layer:
         new.bias = self.bias.copy()
 
         return new
+
+class DigitRecogniserVisual(TypedDict):
+    layer_sizes: list[int]
+    first_layer: dict[str, list]
 
 class DigitRecogniser:
     def __init__(self, epoch: int = 0):
@@ -147,3 +151,30 @@ class DigitRecogniser:
         child.epoch = current_epoch
 
         return child
+
+    def visualise(self) -> dict[str, object]:
+        """
+        Returns visual data of oneself for the GUI to render.
+        Arrays are normalized to 0..1 so the UI can colour map easily.
+        """
+        layer0 = self.layers[0]
+        weights = layer0.weights  # shape (16, 784)
+        # reshape to 16 images of 28x28
+        imgs = weights.reshape(weights.shape[0], 28, 28)
+
+        # normalize each image independently to 0..1 for display
+        norm_imgs = []
+        for img in imgs:
+            mn, mx = img.min(), img.max()
+            if mx - mn < 1e-6:
+                norm_imgs.append((img * 0).tolist())
+            else:
+                norm_imgs.append(((img - mn) / (mx - mn)).tolist())
+
+        return {
+            "layer_sizes": [l.shape()[0] for l in self.layers] + [self.layers[-1].shape()[1]],
+            "first_layer": {
+                "images": norm_imgs,   # list[28][28] floats in 0..1
+                "biases": layer0.bias.flatten().tolist(),
+            },
+        }

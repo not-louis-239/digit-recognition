@@ -27,7 +27,7 @@ class SimState(State):
         self.notifs = AmbientMessage()
 
     def reset(self) -> None:
-        ...
+        self.sim_running = False
 
     def update(self, dt_s: float) -> None:
         self.notifs.update(dt_s)
@@ -56,7 +56,7 @@ class SimState(State):
 
         if self.autosave_button.check_click(input_manager.events):
             self.autosave = not self.autosave
-            self.autosave_button.text = f"Autosave: {'On' if self.autosave else 'Off'}"
+            self.autosave_button.set_appearance(text=f"Autosave: {'On' if self.autosave else 'Off'}")
             if self.autosave:
                 self.notifs.set_msg(text=f"Autosave enabled (every {self.autosave_interval} epochs).", colour=(100, 255, 100), lifetime_s=2)
             else:
@@ -125,7 +125,7 @@ class SimState(State):
         autosave_colour = (100, 255, 100) if self.autosave else (255, 100, 100)
         draw_text(
             surface=wn, pos=(self.padding, self.padding + 140), horiz_align='left', vert_align='top',
-            text=f"Autosave: {"On" if self.autosave else "Off"}", colour=autosave_colour, font_profile=(self.assets.monospaced_reg, 24)
+            text=f"Autosave: {f"Every {self.autosave_interval} epochs" if self.autosave else "Off"}", colour=autosave_colour, font_profile=(self.assets.monospaced_reg, 24)
         )
 
         # Show notification popups
