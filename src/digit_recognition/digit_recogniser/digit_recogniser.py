@@ -104,7 +104,7 @@ class DigitRecogniser:
         return {
             "layers": serializable_layers,
             "metadata": {
-                "architecture": [l.shape()[0] for l in self.layers] + [self.layers[-1].shape()[1]],
+                "architecture": list(self.shape()),
                 "epoch": self.epoch
             }
         }
