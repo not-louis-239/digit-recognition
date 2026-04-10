@@ -143,7 +143,11 @@ class App:
             StateID.SIM: SimState(self.assets, self.sim),
             StateID.GALLERY: GalleryState(self.assets)
         }
+
         self.state = StateID.TITLE
+
+        # Can only do this after self.sim is initialised
+        self.assets.assign_evals(self.sim)
 
     def enter_state(self, state: StateID) -> None:
         self.state = state

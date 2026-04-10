@@ -3,6 +3,7 @@
     "architecture": [ 784, 100, 100, 10 ],
     "epoch": 9999,
     "name": "victor1.0.0:90k",
+    "common_name": "Victor-90k",
     "last_updated": "2026_04_10",
     "activation": "leaky_relu",
     "files": [

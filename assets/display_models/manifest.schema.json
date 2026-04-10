@@ -3,6 +3,16 @@
     "title": "Display Model Manifest",
     "type": "object",
     "additionalProperties": false,
+    "required": [
+        "$schema",
+        "architecture",
+        "epoch",
+        "name",
+        "common_name",
+        "last_updated",
+        "activation",
+        "files"
+    ],
     "properties": {
         "$schema": {
             "type": "string",
@@ -22,6 +32,10 @@
         "name": {
             "type": "string",
             "description": "The name of the display model."
+        },
+        "common_name": {
+            "type": "string",
+            "description": "A common name for the model, used for display purposes."
         },
         "last_updated": {
             "type": "string",

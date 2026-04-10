@@ -3,6 +3,7 @@
     "architecture": [ 784, 16, 16, 10 ],
     "epoch": 27499,
     "name": "victor1.0.0:13k",
+    "common_name": "Victor-13k",
     "last_updated": "2026_04_10",
     "activation": "sigmoid",
     "files": [

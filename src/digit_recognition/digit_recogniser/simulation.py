@@ -81,9 +81,10 @@ class Simulation:
 
         self.year, self.season = get_year_and_season(self.epoch)
 
-    def evaluate_model(self, model: DigitRecogniser, data: list[tuple[np.ndarray, int, np.ndarray]]) -> tuple[float, float]:
-        """Returns tuple of (average_loss, accuracy_rate), where 0 <= accuracy_rate <= 1. data is tuple[img, label, one_hot]
-        Not deprecated as it can still be used to evaluate one model. But for evaluating many models, use evaluate_models_batch() instead."""
+    def evaluate_model(self, model: DigitRecogniser, data: list[tuple[np.ndarray, int, np.ndarray]]) -> Evaluation:
+        """Returns Evaluation object containing loss and accuracy rate. `data` is tuple[img, label, one_hot]
+        Not deprecated as it is used to assign evaluations to models loaded from disk, which is only done once per model.
+        Not for use in training, use evaluate_models_batch() instead."""
 
         # Subsample data for faster evaluation (use only 20% of data for speed)
         subsample_size = max(100, len(data) // 5)  # At least 100 samples, or 20% of data
@@ -118,7 +119,7 @@ class Simulation:
         loss += SMALL_MARGIN_PENALTY_FACTOR * margin_penalty
         accuracy = np.mean(np.argmax(preds, axis=0) == labels)
 
-        return loss, accuracy
+        return Evaluation(loss=loss, accuracy_rate=accuracy, model=model)
 
     def _prepare_cached_data(self, data: list[tuple[np.ndarray, int, np.ndarray]]) -> None:
         """Cache the training dataset as NumPy arrays."""
