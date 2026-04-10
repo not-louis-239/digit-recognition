@@ -6,15 +6,13 @@ import sys
 import json
 from pygame import Surface
 
-from digit_recognition.digit_recogniser.digit_recogniser import DigitRecogniser
 from digit_recognition.digit_recogniser.simulation import Simulation
-from digit_recognition.digit_recogniser.image_manager import load_imgs_from_npy
 from digit_recognition.gui.states import StateID, State
 from digit_recognition.gui.states.title_state import TitleState
 from digit_recognition.gui.states.sim_state import SimState
 from digit_recognition.gui.states.gallery_state import GalleryState
 from digit_recognition.gui.utils.input_manager import InputManager
-from digit_recognition.gui.utils.asset_manager import Assets
+from digit_recognition.gui.utils.asset_manager import Assets, assign_evals
 from digit_recognition.utils.constants import WN_W, WN_H, FPS
 from digit_recognition.utils.dirs import DIRS
 
@@ -147,7 +145,7 @@ class App:
         self.state = StateID.TITLE
 
         # Can only do this after self.sim is initialised
-        self.assets.assign_evals(self.sim)
+        assign_evals(sim=self.sim, wrappers_list=self.assets.model_wrappers, data=self.assets.test_data)
 
     def enter_state(self, state: StateID) -> None:
         self.state = state

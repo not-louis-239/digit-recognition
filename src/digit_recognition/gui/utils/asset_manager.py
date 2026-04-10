@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING
 from dataclasses import dataclass
 
 import numpy as np
@@ -9,9 +8,7 @@ from ...utils.dirs import DIRS
 from ...digit_recogniser.image_manager import load_imgs_from_npy
 from ...utils.custom_types import RawImagesType, OneHotType
 from ...digit_recogniser.simulation import Evaluation, Simulation
-
-if TYPE_CHECKING:
-    from ...digit_recogniser.digit_recogniser import DigitRecogniser
+from ...digit_recogniser.digit_recogniser import DigitRecogniser
 
 @dataclass
 class DigitRecogniserWrapper:
@@ -67,9 +64,22 @@ class Assets:
             if (len_files := len(files)) > 1:
                 print(f"Warning: model has {len_files} associated files (expected 1). Only the first file will be loaded:", model_dir)
 
+            filepath = (DIRS.assets.display_models / files[0]).path()
+            if not filepath.exists():
+                print("Warning: skipping loading model with missing file:", filepath)
+                continue
+
+            try:
+                with open(filepath, "r") as f:
+                    model_data_raw = json.load(f)  # Check if JSON is valid
+                    assert isinstance(model_data_raw, dict), "Model JSON should be a dictionary at the top level"
+            except json.JSONDecodeError:  # Checking for FileNotFoundError isn't necessary as we already check if the file exists, but we still need to catch JSONDecodeError to avoid crashing on corrupted files
+                print("Warning: skipping loading model with corrupted JSON file:", filepath)
+                continue
+
             name = manifest_data.get("name", "unknown_model")
             common_name = manifest_data.get("common_name", name)
-            model = DigitRecogniser.from_json(files[0])
+            model = DigitRecogniser.from_json(model_data_raw)
             perf = None
 
             wrapper = DigitRecogniserWrapper(name=name, common_name=common_name, model=model, perf=perf)
