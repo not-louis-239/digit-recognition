@@ -141,10 +141,10 @@ class DigitRecogniser:
             out = layer.forward(out)
         return out
 
-    def mutate(self) -> None:
+    def mutate(self, rate=STARTING_MUTATION_RATE) -> None:
         """Change one's configuration slightly"""
         for layer in self.layers:
-            layer.mutate()
+            layer.mutate(rate)
 
     def spawn_child(self, current_epoch: int) -> DigitRecogniser:
         """Return a slightly mutated version of oneself.

@@ -1,7 +1,7 @@
-# Generic Config
+# --- Generic Config ---
 __version__ = "0.1.0"
 
-# Config for the evolution simulator
+# --- Simulator Config ---
 IMAGE_SIZE = 28
 
 NEW_CONFIG_RANGE = 0.1
@@ -10,10 +10,11 @@ STARTING_MUTATION_RATE = 0.05
 NEURONS_PER_HIDDEN_LAYER = 16
 
 NUM_HIDDEN_LAYERS = 2
-POPULATION_SIZE = 20
-NUM_GENERATIONS = 500
+POPULATION_SIZE = 50
 
-# Config for the GUI
+# Only keep the best 1 / SELECTION_PRESSURE models each generation
+SELECTION_PRESSURE = 20
+
+# --- GUI Config ---
 FPS = 60
 WN_W, WN_H = 1250, 750
-

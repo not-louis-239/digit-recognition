@@ -21,7 +21,7 @@ import json
 import numpy as np
 from .digit_recogniser import DigitRecogniser
 from ..utils.dirs import DIRS
-from ..utils.constants import POPULATION_SIZE
+from ..utils.constants import POPULATION_SIZE, SELECTION_PRESSURE
 from ..utils.custom_types import TrainingDataType
 
 def calculate_loss(correct: np.ndarray, actual: np.ndarray) -> float:
@@ -70,23 +70,19 @@ class Simulation:
             self.population.append(DigitRecogniser())
             self.epoch: int = 0
 
-    def evaluate_model(self, model: DigitRecogniser, data: TrainingDataType) -> tuple[float, float]:
+    def evaluate_model(self, model: DigitRecogniser, data: list[tuple[np.ndarray, int, np.ndarray]]) -> tuple[float, float]:
         """Returns tuple of (average_loss, accuracy_rate), where 0 <= accuracy_rate <= 1."""
 
         total_loss: float = 0.0
         correct_guesses: int = 0
         total_samples: int = len(data)
 
-        for image, correct_num in data:
-            # Prepare Ground Truth (One-Hot Encoding)
-            correct_one_hot = np.zeros((10, 1))
-            correct_one_hot[correct_num] = 1.0
-
+        for image, correct_num, one_hot in data:
             # Get Prediction
             prediction = model.predict(image) # Returns (10, 1) array of probabilities
 
             # Calculate Loss for this specific image
-            total_loss += calculate_loss(correct_one_hot, prediction)
+            total_loss += calculate_loss(one_hot, prediction)
 
             # Check Accuracy
             # np.argmax finds the index of the highest value (the model's "choice")
@@ -98,9 +94,9 @@ class Simulation:
 
         return (average_loss, accuracy_rate)
 
-    def run_generation(self, training_data: TrainingDataType) -> None:
+    def run_generation(self, one_hots: list[tuple[np.ndarray, int, np.ndarray]]) -> None:
         """
-        Run a generation.
+        Run a generation. Takes training data in the form of list[tuple[image, correct_digit, one_hot]]
         Eliminate all but the best individuals, then have the best
         individuals make offspring for the next generation.
 
@@ -111,7 +107,7 @@ class Simulation:
         # We store them as (loss, model) tuples so we can sort them
         results: list[Evaluation] = []
         for model in self.population:
-            loss, accuracy_rate = self.evaluate_model(model, training_data)
+            loss, accuracy_rate = self.evaluate_model(model, one_hots)
             results.append(Evaluation(loss=loss, accuracy_rate=accuracy_rate, model=model))
 
         # Sort by loss (lowest is best!)
@@ -122,7 +118,7 @@ class Simulation:
         print(f"Generation Best Loss: {best_eval.loss:.4f} | Best Acc: {best_eval.accuracy_rate:.4%}")
 
         # Selection: Keep the top 10%. The rest? Goodbye.
-        num_elites = max(1, POPULATION_SIZE // 10)
+        num_elites = max(1, POPULATION_SIZE // SELECTION_PRESSURE)
         elites: list[DigitRecogniser] = [e.model for e in results[:num_elites]]
 
         # Repopulation: Fill the rest of the slots with mutated clones

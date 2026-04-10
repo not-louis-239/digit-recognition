@@ -38,7 +38,7 @@ class SimState(State):
         self.notifs.update(dt_s)
 
         if self.sim_running:
-            self.sim.run_generation(self.assets.training_data)
+            self.sim.run_generation(self.assets.one_hots)
 
             if (self.autosave) and (self.sim.last_evals) and (self.sim.epoch % self.autosave_interval == 0):
                 self.notifs.set_msg(text=f"Epoch {self.sim.epoch} saved (Autosave)", colour=(100, 255, 100), lifetime_s=1.5)
@@ -106,7 +106,7 @@ class SimState(State):
             best = self.sim.last_evals[0]
             draw_text(
                 surface=wn, pos=(WN_W - self.padding, self.padding + 185), horiz_align='right', vert_align='top',
-                text=f"Best Loss: {best.loss:.4f}", colour=(220, 220, 220),
+                text=f"Best Loss: {best.loss:.4g}", colour=(220, 220, 220),
                 font_profile=(self.assets.monospaced_reg, 24)
             )
             draw_text(
@@ -163,11 +163,11 @@ class SimState(State):
         )
         draw_text(
             surface=wn, pos=(self.padding, self.padding + 60), horiz_align='left', vert_align='top',
-            text=f"Year {year}", colour=(255, 255, 255), font_profile=(self.assets.monospaced_reg, 24)
+            text=f"Year {year:,}", colour=(255, 255, 255), font_profile=(self.assets.monospaced_reg, 24)
         )
         draw_text(
             surface=wn, pos=(self.padding, self.padding + 90), horiz_align='left', vert_align='top',
-            text=f"Generation {self.sim.epoch}", colour=(150, 150, 150), font_profile=(self.assets.monospaced_reg, 24)
+            text=f"Generation {self.sim.epoch:,}", colour=(150, 150, 150), font_profile=(self.assets.monospaced_reg, 24)
         )
 
         autosave_colour = (100, 255, 100) if self.autosave else (255, 100, 100)
