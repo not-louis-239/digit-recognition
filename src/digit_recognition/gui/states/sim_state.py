@@ -267,6 +267,7 @@ class SimState(State):
         # Show loss distribution as bar graph with lowest loss on the left
         if self.sim.last_evals:
             losses = [ev.loss for ev in self.sim.last_evals]
+            min_loss = min(losses)
             max_loss = max(losses)
             spread = max(max_loss, 1e-8)
 
@@ -290,6 +291,29 @@ class SimState(State):
             draw_text(
                 surface=wn, pos=(graph_x, graph_y - 6), horiz_align='left', vert_align='bottom',
                 text="Loss Distribution (best → worst)", colour=(180, 180, 180),
+                font_profile=(self.assets.monospaced_reg, 18)
+            )
+
+            draw_text(
+                surface=wn, pos=(graph_x - 10, graph_y), horiz_align='right', vert_align='centre',
+                text=f"{max_loss:.4f}", colour=(180, 180, 180),
+                font_profile=(self.assets.monospaced_reg, 18)
+            )
+
+            draw_text(
+                surface=wn, pos=(graph_x - 10, graph_y + graph_h), horiz_align='right', vert_align='centre',
+                text=f"{min_loss:.4f}", colour=(180, 180, 180),
+                font_profile=(self.assets.monospaced_reg, 18)
+            )
+
+            draw_text(
+                surface=wn, pos=(graph_x - 10, graph_y + graph_h // 2 - 12), horiz_align='right', vert_align='centre',
+                text=f"r={max_loss - min_loss:.4f}", colour=(255, 255, 255),
+                font_profile=(self.assets.monospaced_reg, 18)
+            )
+            draw_text(
+                surface=wn, pos=(graph_x - 10, graph_y + graph_h // 2 + 12), horiz_align='right', vert_align='centre',
+                text=f"{(max_loss - min_loss) / max_loss:.2%}", colour=(255, 255, 255),
                 font_profile=(self.assets.monospaced_reg, 18)
             )
 
