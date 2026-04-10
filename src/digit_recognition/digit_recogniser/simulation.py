@@ -29,6 +29,7 @@ from ..utils.constants import (
     HYPERMUTATION_RATE,
     CONFIDENCE_PENALTY_FACTOR,
     SMALL_MARGIN_PENALTY_FACTOR,
+    TARGET_MARGIN,
     calc_mutation_rate,
 )
 from ..utils.seasons import get_year_and_season
@@ -100,7 +101,7 @@ class Simulation:
         top1 = top2[-1]
         second = top2[-2]
         margins = top1 - second
-        margin_penalty = np.mean(np.clip(1.0 - margins, 0.0, 1.0))
+        margin_penalty = np.mean(np.clip(TARGET_MARGIN - margins, 0.0, 1.0))
 
         loss += CONFIDENCE_PENALTY_FACTOR * confidence_penalty
         loss += SMALL_MARGIN_PENALTY_FACTOR * margin_penalty

@@ -4,8 +4,9 @@ from ..utils import lerp
 __version__ = "0.1.0"
 
 # --- Loss Calculation Config ---
-CONFIDENCE_PENALTY_FACTOR = 0.5
-SMALL_MARGIN_PENALTY_FACTOR = 0.2
+CONFIDENCE_PENALTY_FACTOR = 1
+SMALL_MARGIN_PENALTY_FACTOR = 1
+TARGET_MARGIN = 0.6  # top guess - 2nd top guess
 
 # --- Simulator Config ---
 IMAGE_SIZE = 28
@@ -14,7 +15,7 @@ NEW_CONFIG_RANGE = 0.1
 NEURONS_PER_HIDDEN_LAYER = 16
 
 NUM_HIDDEN_LAYERS = 2
-POPULATION_SIZE = 25
+POPULATION_SIZE = 50
 
 # Only keep the best 1 / selection_pressure models each generation
 # Base selection pressure is modified based on season and in future, possibly other factors
@@ -36,7 +37,8 @@ def calc_mutation_rate(epoch: int) -> float:
         (3000, 0.02),
         (6000, 0.01),
         (10000, 0.005),
-        (20000, 0.002)
+        (20000, 0.002),
+        (40000, 0.00125)
     ]
 
     # Handle bounds
