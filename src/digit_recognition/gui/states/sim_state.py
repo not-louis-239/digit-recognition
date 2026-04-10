@@ -4,7 +4,7 @@ import pygame as pg
 import numpy as np
 from pygame import Surface
 
-from digit_recognition.utils.constants import WN_W, WN_H, BASE_SELECTION_PRESSURE, calc_mutation_rate
+from digit_recognition.utils.constants import WN_W, WN_H, BASE_SELECTION_PRESSURE, calc_mutation_rate, IMAGE_SIZE
 from digit_recognition.gui.utils.text_utils import draw_text
 from digit_recognition.gui.utils.asset_manager import Assets
 from digit_recognition.gui.utils.buttons import Button
@@ -151,8 +151,21 @@ class SimState(State):
                         font_profile=(self.assets.monospaced_reg, 18)
                     )
 
+                # Render the sample image so it's clear what the model "saw"
+                sample_scale = 5
+                sample_size = IMAGE_SIZE * sample_scale
+                sample_x = WN_W - self.padding - sample_size - diagnostic_margin_x - 100
+                sample_y = self.padding + 280
+                for r, row_vals in enumerate(sample_img):
+                    for c, val in enumerate(row_vals):
+                        v = max(0, min(255, int(val * 255)))
+                        pg.draw.rect(
+                            wn, (v, v, v),
+                            (sample_x + c * sample_scale, sample_y + r * sample_scale, sample_scale, sample_scale)
+                        )
+
             draw_text(
-                surface=wn, pos=(WN_W - self.padding, self.padding + 470), horiz_align='right', vert_align='top',
+                surface=wn, pos=(WN_W - self.padding, self.padding + 520), horiz_align='right', vert_align='top',
                 text="Best Model (visualised):", colour=(220, 220, 220),
                 font_profile=(self.assets.monospaced_reg, 22)
             )
@@ -167,7 +180,7 @@ class SimState(State):
 
                 total_w = cols * tile_size + (cols - 1) * tile_gap
                 start_x = WN_W - self.padding - total_w
-                start_y = self.padding + 505
+                start_y = self.padding + 555
 
                 for idx, img in enumerate(images):
                     col = idx % cols
