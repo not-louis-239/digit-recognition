@@ -1,54 +1,81 @@
+from __future__ import annotations
+
+import json
+
 from ..utils import lerp
+from ..utils.dirs import DIRS
+
+def _load_config() -> dict:
+    config_path = (DIRS.assets / "config.json").path()
+    try:
+        with open(config_path, "r") as f:
+            data = json.load(f)
+        if isinstance(data, dict):
+            return data
+    except FileNotFoundError:
+        return {}
+    except json.JSONDecodeError:
+        return {}
+    return {}
+
+_CONFIG = _load_config()
+
+def _get(key: str, default):
+    return _CONFIG.get(key, default)
 
 # --- Generic Config ---
 __version__ = "0.1.0"
 
 # --- Softmax/Prediction Config ---
-LOGIT_GAIN = 1.8
+LOGIT_GAIN = float(_get("LOGIT_GAIN", 1.1))
 
 # --- Loss Calculation Config ---
-CONFIDENCE_PENALTY_FACTOR = 0.5
-SMALL_MARGIN_PENALTY_FACTOR = 0.2
-TARGET_MARGIN = 0.65  # top guess - 2nd top guess
+CONFIDENCE_PENALTY_FACTOR = float(_get("CONFIDENCE_PENALTY_FACTOR", 0.05))
+SMALL_MARGIN_PENALTY_FACTOR = float(_get("SMALL_MARGIN_PENALTY_FACTOR", 0.05))
+TARGET_MARGIN = float(_get("TARGET_MARGIN", 0.3))  # top guess - 2nd top guess
 
 # --- Simulator Config ---
-IMAGE_SIZE = 28
+IMAGE_SIZE = int(_get("IMAGE_SIZE", 28))
 
-NEW_CONFIG_RANGE = 2.0
-NEURONS_PER_HIDDEN_LAYER = 16
+NEW_CONFIG_RANGE = float(_get("NEW_CONFIG_RANGE", 0.5))
+NEURONS_PER_HIDDEN_LAYER = int(_get("NEURONS_PER_HIDDEN_LAYER", 16))
 
-NUM_HIDDEN_LAYERS = 2
-POPULATION_SIZE = 50
+NUM_HIDDEN_LAYERS = int(_get("NUM_HIDDEN_LAYERS", 2))
+POPULATION_SIZE = int(_get("POPULATION_SIZE", 50))
 
-SCALE_MUTATION_FACTOR = 1.05
-SCALE_MUTATION_CHANCE = 0.1
+SCALE_MUTATION_FACTOR = float(_get("SCALE_MUTATION_FACTOR", 1.05))
+SCALE_MUTATION_CHANCE = float(_get("SCALE_MUTATION_CHANCE", 0.1))
 
 # Past this, there will be no new immigrants or hypermutants
-HARDENING_EPOCH = 4000
+HARDENING_EPOCH = int(_get("HARDENING_EPOCH", 4000))
 
 # Only keep the best 1 / selection_pressure models each generation
 # Base selection pressure is modified based on season and in future, possibly other factors
-BASE_SELECTION_PRESSURE = 15
+BASE_SELECTION_PRESSURE = float(_get("BASE_SELECTION_PRESSURE", 12))
 
-IMMIGRATION_RATE = 0.007
-HYPERMUTATION_RATE = 0.007
+IMMIGRATION_RATE = float(_get("IMMIGRATION_RATE", 0.0))
+HYPERMUTATION_RATE = float(_get("HYPERMUTATION_RATE", 0.0))
 
 # --- GUI Config ---
-FPS = 60
-WN_W, WN_H = 1250, 820
+FPS = int(_get("FPS", 60))
+WN_W = int(_get("WN_W", 1250))
+WN_H = int(_get("WN_H", 820))
 
 def calc_mutation_rate(epoch: int) -> float:
     """Return a smart mutation rate (higher at start, lower as time passes)"""
 
     # Define milestones: (epoch, rate)
-    milestones = [
-        (0, 0.05),
-        (3000, 0.02),
-        (6000, 0.01),
-        (10000, 0.005),
-        (20000, 0.002),
-        (40000, 0.00125)
-    ]
+    milestones = _get(
+        "MUTATION_MILESTONES",
+        [
+            (0, 0.03),
+            (3000, 0.02),
+            (6000, 0.01),
+            (10000, 0.005),
+            (20000, 0.002),
+            (40000, 0.00125),
+        ],
+    )
 
     # Handle bounds
     if epoch <= milestones[0][0]: return milestones[0][1]
