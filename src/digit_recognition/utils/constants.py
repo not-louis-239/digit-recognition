@@ -18,3 +18,9 @@ SELECTION_PRESSURE = 20
 # --- GUI Config ---
 FPS = 60
 WN_W, WN_H = 1250, 750
+
+def calc_mutation_rate(gen: int) -> float:
+    """Return a smart mutation rate (higher at start, lower as time passes)"""
+
+    factor = 1 / (gen ** 0.35)
+    return STARTING_MUTATION_RATE * factor
