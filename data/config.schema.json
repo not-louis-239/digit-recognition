@@ -1,0 +1,57 @@
+{
+    "$schema": "https://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "properties": {
+        "$schema": {
+            "type": "string"
+        },
+        "logit_gain": {
+            "type": "number",
+            "minimum": 0
+        },
+        "image_size": {
+            "type": "integer",
+            "minimum": 1
+        },
+        "new_param_range": {
+            "type": "number",
+            "minimum": 0
+        },
+        "neurons_per_hidden_layer": {
+            "type": "integer",
+            "minimum": 1
+        },
+        "num_hidden_layers": {
+            "type": "integer",
+            "minimum": 1
+        },
+        "population_size": {
+            "type": "integer",
+            "minimum": 5
+        },
+        "base_selection_pressure": {
+            "type": "number",
+            "minimum": 1
+        },
+        "mutation_milestones": {
+            "type": "array",
+            "items": {
+                "type": "array",
+                "items": [
+                    {
+                        "type": "integer",
+                        "description": "The generation or step index.",
+                        "minimum": 0
+                    },
+                    {
+                        "type": "number",
+                        "description": "The mutation rate associated with this milestone.",
+                        "minimum": 0
+                    }
+                ],
+                "minItems": 2,
+                "maxItems": 2
+            }
+        }
+    }
+}
