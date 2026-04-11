@@ -1,5 +1,10 @@
 import pygame as pg
 from pygame import Surface
+import numpy as np
+
+from digit_recognition.utils.custom_types import OneHotType
+
+
 
 class Canvas:
     def __init__(self, width: int, height: int) -> None:
@@ -53,6 +58,15 @@ class Canvas:
                     dist_sq = dx ** 2 + dy ** 2
                     if dist_sq <= rad_sq:
                         self[x, y] = min(1.0, self[x, y] + raw_inc * (1.0 - (dist_sq / rad_sq)))
+
+    def to_one_hot(self, correct_digit: int) -> tuple[np.ndarray, int, np.ndarray]:
+        image: np.ndarray = np.array(self.cells, dtype=np.float32)
+        label: np.ndarray = np.zeros(10, dtype=np.float32)
+        label[correct_digit] = 1.0
+        return (image, correct_digit, label)
+
+    def as_array(self) -> np.ndarray:
+        return np.array(self.cells, dtype=np.float32)
 
     def draw(self, surface: Surface, start_pos: tuple[int, int], tile_size_px: int) -> None:
         """Draws the canvas onto the given surface. Assumes the surface is the same size as the canvas."""

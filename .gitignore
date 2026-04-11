@@ -1,3 +1,6 @@
+# Ignore tinkering
+assets/config.json
+
 # Ignore training data files (these can get large and bloat the repo)
 assets/training_data/
 

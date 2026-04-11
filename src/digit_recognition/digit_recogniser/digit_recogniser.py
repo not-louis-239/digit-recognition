@@ -12,11 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, TypedDict
+from typing import TypedDict, Literal, TypeAlias
+from enum import Enum
 import numpy as np
 
 from ..utils import chance
 from ..utils.constants import IMAGE_SIZE, LOGIT_GAIN, SCALE_MUTATION_FACTOR, SCALE_MUTATION_CHANCE, NEURONS_PER_HIDDEN_LAYER
+from digit_recognition.utils.custom_types import JSONType
+from digit_recognition.utils.diagnostic_helpers import print_warn
+
+class Reproduction(Enum):
+    ASEXUAL = "asexual"
+    SEXUAL = "sexual"
+    NONE = None
 
 
 
@@ -85,7 +93,10 @@ class DigitRecogniser:
         self.epoch = epoch  # purely cosmetic, but nice to keep track of
         self.grace = grace  # determines number of "safety" generations where it can't be culled
 
-    def to_json(self) -> dict[str, Any]:
+        # Reproduction type is only assigned for perf testing.
+        self.reproduction_type: Reproduction = Reproduction.NONE
+
+    def to_json(self) -> JSONType:
         """Convert the model's layers into a JSON-serializable dictionary."""
         serializable_layers = []
         for layer in self.layers:
@@ -103,7 +114,7 @@ class DigitRecogniser:
         }
 
     @classmethod
-    def from_json(cls, data: dict[str, Any]) -> DigitRecogniser:
+    def from_json(cls, data: JSONType) -> DigitRecogniser:
         """Load a model from a JSON-style object."""
 
         # Create instance without calling __init__ (prevents random weight gen)
@@ -120,6 +131,7 @@ class DigitRecogniser:
         # Metadata
         model.epoch = data["metadata"]["epoch"]
         model.grace = 0  # models aren't automatically invincible upon reload
+        model.reproduction_type = Reproduction.NONE
 
         return model
 
@@ -138,6 +150,7 @@ class DigitRecogniser:
         # Copy metadata
         new_model.epoch = self.epoch
         new_model.grace = self.grace if preserve_grace else 0
+        new_model.reproduction_type = Reproduction.NONE
 
         return new_model
 
@@ -179,22 +192,23 @@ class DigitRecogniser:
             if chance(SCALE_MUTATION_CHANCE):
                 layer.intensify(SCALE_MUTATION_FACTOR)
 
-    def spawn_child(self, current_epoch: int, mutation_rate: float) -> DigitRecogniser:
-        """Return a slightly mutated version of oneself.
-        Basically "asexual reproduction" in a sense."""
+    def spawn_child_asexual(self, current_epoch: int, mutation_rate: float) -> DigitRecogniser:
+        """Asexual reproduction. Return a slightly mutated version of oneself."""
 
         child = self.copy()
         child.mutate(mutation_rate)
         child.epoch = current_epoch
+        child.reproduction_type = Reproduction.ASEXUAL
 
         return child
 
-    def spawn_child_with_mate(self, mate: DigitRecogniser, current_epoch: int, mutation_rate: float) -> DigitRecogniser:
+    def spawn_child_sexual(self, mate: DigitRecogniser, current_epoch: int, mutation_rate: float) -> DigitRecogniser:
         """Sexual reproduction implementation using layer masks to mix-and-match weights and biases"""
 
         if mate is self:
             # When attempting to mate with oneself, it collapses back to asexual reproduction
-            return self.spawn_child(current_epoch, mutation_rate)
+            print_warn("Self-mating detected. Collapsing back to asexual reproduction.")
+            return self.spawn_child_asexual(current_epoch, mutation_rate)
 
         child = self.copy()
 
@@ -210,6 +224,8 @@ class DigitRecogniser:
 
         child.mutate(mutation_rate)
         child.epoch = current_epoch
+        child.reproduction_type = Reproduction.SEXUAL
+
         return child
 
     def visualise(self) -> DigitRecogniserVisual:

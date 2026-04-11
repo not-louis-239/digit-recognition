@@ -16,6 +16,14 @@ from digit_recognition.digit_recogniser.simulation import Simulation, save_to_di
 from digit_recognition.gui.utils.ambient_messages import AmbientMessage
 from digit_recognition.utils import clamp
 from digit_recognition.utils.diagnostic_helpers import print_warn
+from ...digit_recogniser.digit_recogniser import Reproduction
+from ...utils.custom_types import Colour
+
+LOSS_GRAPH_COLOURS: dict[Reproduction, Colour] = {
+    Reproduction.ASEXUAL: (180, 94, 255),
+    Reproduction.SEXUAL: (94, 255, 201),
+    Reproduction.NONE: (145, 145, 145)
+}
 
 class SimState(State):
     def __init__(self, assets: Assets, sim: Simulation):
@@ -48,7 +56,7 @@ class SimState(State):
 
         if self.sim_running:
             # Take a random sample of the training data (makes training faster)
-            subsample_size = clamp(int(len(self.assets.training_data) * 0.2), (100, 1_000))  # 20% of data (min 100 samples, and no more than 1,000 samples)
+            subsample_size = clamp(int(len(self.assets.training_data) * 0.2), (100, 10_000))  # 20% of data (min 100 samples, and no more than 10,000 samples)
             if subsample_size > len(self.assets.training_data):
                 print_warn("scarce data: using all training data")
 
@@ -237,7 +245,7 @@ class SimState(State):
                     bar_h = int(norm * graph_h)
                     x = graph_x + i * bar_w
                     y = graph_y + (graph_h - bar_h)
-                    colour = (100, 255, 100) if ev.model.grace > 0 else (140, 200, 255)
+                    colour = LOSS_GRAPH_COLOURS[ev.model.reproduction_type]
                     pg.draw.rect(wn, colour, (x, y, bar_w + 1, bar_h))  # +1 removes gaps
 
                 draw_text(
@@ -268,6 +276,23 @@ class SimState(State):
                     text=f"{(max_loss - min_loss) / max_loss:.2%}", colour=(255, 255, 255),
                     font_profile=(self.assets.monospaced_reg, 18)
                 )
+
+                if (losses_sexual := [ev.loss for ev in self.sim.last_evals if ev.model.reproduction_type == Reproduction.SEXUAL]):
+                    average_loss_sexual = sum(losses_sexual) / len(losses_sexual)
+                    draw_text(
+                        surface=wn, pos=(self.padding, left_items_start_y + 270), horiz_align='left', vert_align='top',
+                        text=f"Avg Loss (Sexual): {average_loss_sexual:.4f}", colour=(LOSS_GRAPH_COLOURS[Reproduction.SEXUAL]),
+                        font_profile=(self.assets.monospaced_reg, 22)
+                    )
+
+                if (losses_asexual := [ev.loss for ev in self.sim.last_evals if ev.model.reproduction_type == Reproduction.ASEXUAL]):
+                    average_loss_asexual = sum(losses_asexual) / len(losses_asexual)
+                    draw_text(
+                        surface=wn, pos=(self.padding, left_items_start_y + 300), horiz_align='left', vert_align='top',
+                        text=f"Avg Loss (Asexual): {average_loss_asexual:.4f}", colour=(LOSS_GRAPH_COLOURS[Reproduction.ASEXUAL]),
+                        font_profile=(self.assets.monospaced_reg, 22)
+                    )
+
         elif not self.minimal_ui:
             draw_text(
                 surface=wn, pos=(WN_W - self.padding, self.padding + 185), horiz_align='right', vert_align='top',
@@ -310,15 +335,21 @@ class SimState(State):
             text=f"Generation {self.sim.epoch:,}", colour=(150, 150, 150), font_profile=(self.assets.monospaced_reg, 22)
         )
 
-        if not self.minimal_ui:
-            # Show autosave status
-            autosave_colour = (100, 255, 100) if self.autosave else (255, 100, 100)
-            autosave_text = f"Every {self.autosave_interval:,} epochs" if self.autosave else "Off"
-            draw_text(
-                surface=wn, pos=(self.padding, left_items_start_y), horiz_align='left', vert_align='top',
-                text=f"Autosave: {autosave_text}", colour=autosave_colour, font_profile=(self.assets.monospaced_reg, 22)
-            )
+        # Show autosave status
+        autosave_colour = (100, 255, 100) if self.autosave else (255, 100, 100)
+        autosave_text = f"Every {self.autosave_interval:,} epochs" if self.autosave else "Off"
+        draw_text(
+            surface=wn, pos=(self.padding, left_items_start_y), horiz_align='left', vert_align='top',
+            text=f"Autosave: {autosave_text}", colour=autosave_colour, font_profile=(self.assets.monospaced_reg, 22)
+        )
 
+        # Show notification popups
+        draw_text(
+            surface=wn, pos=(self.padding, WN_H - self.padding * 2 - 100), horiz_align='left', vert_align='bottom',
+            text=f"{self.notifs.text}", colour=self.notifs.colour, font_profile=(self.assets.monospaced_reg, 24)
+        )
+
+        if not self.minimal_ui:
             # Show shape of the current models as (l0, l1...ln) where ln is the number of neurons in each layer
             shape = self.sim.population[0].shape()
 
@@ -366,10 +397,4 @@ class SimState(State):
                 surface=wn, pos=(self.padding, left_items_start_y + 210), horiz_align='left', vert_align='top',
                 text=f"Training on {len(self.assets.training_data):,} samples", colour=(220, 220, 220),
                 font_profile=(self.assets.monospaced_reg, 22)
-            )
-
-            # Show notification popups
-            draw_text(
-                surface=wn, pos=(self.padding, WN_H - self.padding * 2 - 100), horiz_align='left', vert_align='bottom',
-                text=f"{self.notifs.text}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 24)
             )

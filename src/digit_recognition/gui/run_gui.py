@@ -139,7 +139,7 @@ class App:
         self.states: dict[StateID, State] = {
             StateID.TITLE: TitleState(self.assets),
             StateID.SIM: SimState(self.assets, self.sim),
-            StateID.GALLERY: GalleryState(self.assets)
+            StateID.GALLERY: GalleryState(self.assets, self.sim)
         }
 
         self.state = StateID.TITLE

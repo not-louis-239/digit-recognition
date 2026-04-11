@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
 import pygame as pg
+import numpy as np
 from pygame import Surface
 
 from digit_recognition.gui.utils.canvas import Canvas
@@ -9,6 +10,7 @@ from digit_recognition.gui.utils.input_manager import MouseButton, InputManager
 from digit_recognition.gui.utils.buttons import Button
 from digit_recognition.gui.states import State, StateChangeRequest, StateID
 from digit_recognition.utils import lerp, invlerp
+from digit_recognition.digit_recogniser.simulation import Simulation
 from digit_recognition.utils.constants import BRUSH_SIZE, BRUSH_STRENGTH, IMAGE_SIZE, WN_H
 
 if TYPE_CHECKING:
@@ -41,7 +43,7 @@ class GalleryState(State):
     to the training set. This will allow you to train the model.
     Additionally, browse the training data."""
 
-    def __init__(self, assets: Assets) -> None:
+    def __init__(self, assets: Assets, sim: Simulation) -> None:
         self.assets = assets
         self.ui_padding = 30
 
@@ -59,9 +61,17 @@ class GalleryState(State):
         self.is_drawing_mode: bool = False
         self.show_number_balance: bool = False
         self.active_digit: int = 0
+        self.sim = sim
+
+        self.reset()
 
     def reset(self) -> None:
         self.canvas.clear()
+
+        # Update view of best model (assuming Simulation.run_generation() was called)
+        best = self.sim.get_best_models(1)[0]
+        best = self.assets.model_wrappers[0].model
+        self.best_model = best
 
     def update(self, dt_s: float) -> None:
         pass
@@ -69,6 +79,15 @@ class GalleryState(State):
     def take_input(self, input_manager: InputManager) -> StateChangeRequest:
         if self.return_button.check_click(input_manager.events):
             return StateChangeRequest(new=StateID.TITLE)
+
+        if input_manager.went_down(pg.K_b):
+            self.show_number_balance = not self.show_number_balance
+        if input_manager.went_down(pg.K_BACKSPACE):
+            if self.is_drawing_mode:
+                self.canvas.clear()
+        if input_manager.went_down(pg.K_SPACE):
+            self.model_prediction = self.best_model.predict(self.canvas.as_array())
+            print(f"Model prediction: {np.argmax(self.model_prediction)}")
 
         if input_manager.mouse_is_down(MouseButton.LMB):
             mouse_pos = pg.mouse.get_pos()

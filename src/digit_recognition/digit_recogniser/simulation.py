@@ -222,11 +222,11 @@ class Simulation:
             elif len(survivors) >= 2 and chance(0.6):
                 # Sexual reproduction: pick two survivors and mate them
                 parent_a, parent_b = random.sample(survivors, 2)
-                new = parent_a.spawn_child_with_mate(parent_b, self.epoch + 1, mutation_rate)
+                new = parent_a.spawn_child_sexual(parent_b, self.epoch + 1, mutation_rate)
             else:
                 # Asexual reproduction: pick a random survivor and mutate them
                 parent = random.choice(survivors)
-                new = parent.spawn_child(self.epoch + 1, mutation_rate)
+                new = parent.spawn_child_asexual(self.epoch + 1, mutation_rate)
             new_generation.append(new)
 
         self.population = new_generation

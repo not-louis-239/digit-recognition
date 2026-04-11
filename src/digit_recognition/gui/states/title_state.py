@@ -15,7 +15,10 @@ class TitleState(State):
     def __init__(self, assets: Assets) -> None:
         self.assets = assets
 
-        self.start_button = Button((WN_W // 2 - 100, WN_H // 2 - 50), (200, 100), "Start")
+        button_gap = 110
+        start_x, start_y = (WN_W // 2 - 200, WN_H // 2 - 50)
+        self.start_button = Button((start_x, start_y), (400, 70), "Start Simulation")
+        self.gallery_button = Button((start_x, start_y + button_gap), (400, 70), "Gallery")
 
     def reset(self) -> None:
         pass
@@ -26,6 +29,8 @@ class TitleState(State):
     def take_input(self, input_manager: InputManager) -> StateChangeRequest:
         if self.start_button.check_click(input_manager.events):
             return StateChangeRequest(new=StateID.SIM)
+        if self.gallery_button.check_click(input_manager.events):
+            return StateChangeRequest(new=StateID.GALLERY)
         return StateChangeRequest()
 
     def draw(self, wn: Surface) -> None:
@@ -37,3 +42,4 @@ class TitleState(State):
         )
 
         self.start_button.draw(wn)
+        self.gallery_button.draw(wn)
