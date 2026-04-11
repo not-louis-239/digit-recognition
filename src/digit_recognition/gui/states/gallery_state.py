@@ -8,6 +8,7 @@ from digit_recognition.gui.utils.canvas import Canvas
 from digit_recognition.gui.utils.ambient_messages import AmbientMessage
 from digit_recognition.gui.utils.input_manager import MouseButton, InputManager
 from digit_recognition.gui.utils.buttons import Button
+from digit_recognition.gui.utils.text_utils import draw_text
 from digit_recognition.gui.states import State, StateChangeRequest, StateID
 from digit_recognition.utils import lerp, invlerp
 from digit_recognition.digit_recogniser.simulation import Simulation
@@ -87,7 +88,6 @@ class GalleryState(State):
                 self.canvas.clear()
         if input_manager.went_down(pg.K_SPACE):
             self.model_prediction = self.best_model.predict(self.canvas.as_array())
-            print(f"Model prediction: {np.argmax(self.model_prediction)}")
 
         if input_manager.mouse_is_down(MouseButton.LMB):
             mouse_pos = pg.mouse.get_pos()
@@ -111,6 +111,18 @@ class GalleryState(State):
         return StateChangeRequest()
 
     def draw(self, wn: Surface) -> None:
+        CANVAS_PIXEL_SIZE = 20
+
         wn.fill((30, 30, 30))
-        self.canvas.draw(wn, tile_size_px=20, start_pos=(self.ui_padding, self.ui_padding))
+        self.canvas.draw(wn, tile_size_px=CANVAS_PIXEL_SIZE, start_pos=(self.ui_padding, self.ui_padding))
         self.return_button.draw(wn)
+
+        if hasattr(self, "model_prediction"):
+            text_start_x = 2 * self.ui_padding + self.canvas.width * CANVAS_PIXEL_SIZE
+            text_start_y = self.ui_padding
+            last_pred = np.argmax(self.model_prediction)
+
+            draw_text(
+                surface=wn, pos=(text_start_x, text_start_y), horiz_align='left', vert_align='top',
+                text=f"Predicted label: {last_pred}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 18)
+            )
