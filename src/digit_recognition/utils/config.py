@@ -11,17 +11,19 @@ def load_config(path: Path = (DIRS.data / "config.json").path()) -> JSONType:
     try:
         with open(path, "r", encoding="utf-8") as f:
             conf = json.load(f)
-        print_info(f"Successfully loaded config file '{path}':")
-        print_info("\n" + conf)
     except FileNotFoundError:
-        print_info("Config file not found. Using defaults.")
+        print_info(f"Config file '{path}' not found. Using defaults.")
+        return {}
     except json.JSONDecodeError:
         print_warn("Config.json is corrupted. Using defaults.")
+        return {}
     except Exception as e:
-        print_warn(f"Failed to load config: {e}. Using defaults.")
+        print_warn(f"Failed to load config. Using defaults.")
+        print_warn(f"{type(e).__name__}: {e}")
+        return {}
 
-    print_warn(f"Could not load config, using defaults")
-    return {}
+    print_info(f"Successfully parsed config file '{path}':")
+    return conf
 
 _config = load_config()
 def _get(key: str, *, default: Any):
