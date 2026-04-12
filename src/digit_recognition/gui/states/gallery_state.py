@@ -12,7 +12,8 @@ from digit_recognition.gui.utils.text_utils import draw_text
 from digit_recognition.gui.states import State, StateChangeRequest, StateID
 from digit_recognition.utils import lerp, invlerp
 from digit_recognition.digit_recogniser.simulation import Simulation
-from digit_recognition.utils.constants import BRUSH_SIZE, BRUSH_STRENGTH, IMAGE_SIZE, WN_H
+from digit_recognition.utils.constants import BRUSH_SIZE, BRUSH_STRENGTH, WN_H
+from digit_recognition.utils.config import IMAGE_SIZE
 
 if TYPE_CHECKING:
     from digit_recognition.gui.utils.asset_manager import Assets
@@ -111,12 +112,14 @@ class GalleryState(State):
         return StateChangeRequest()
 
     def draw(self, wn: Surface) -> None:
-        CANVAS_PIXEL_SIZE = 20
+        CANVAS_SIZE = 560
+        CANVAS_PIXEL_SIZE = CANVAS_SIZE / IMAGE_SIZE
 
         wn.fill((30, 30, 30))
         self.canvas.draw(wn, tile_size_px=CANVAS_PIXEL_SIZE, start_pos=(self.ui_padding, self.ui_padding))
         self.return_button.draw(wn)
 
+        # TODO: replace hasattr usage with different algorithm
         if hasattr(self, "model_prediction"):
             text_start_x = 2 * self.ui_padding + self.canvas.width * CANVAS_PIXEL_SIZE
             text_start_y = self.ui_padding

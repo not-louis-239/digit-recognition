@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TypedDict, Literal, TypeAlias
+from warnings import deprecated
+from typing import TypedDict
 from enum import Enum
 import numpy as np
 
-from ..utils import chance
-from ..utils.constants import IMAGE_SIZE, LOGIT_GAIN, SCALE_MUTATION_FACTOR, SCALE_MUTATION_CHANCE, NEURONS_PER_HIDDEN_LAYER
+from ..utils.config import NEURONS_PER_HIDDEN_LAYER, LOGIT_GAIN, IMAGE_SIZE
 from digit_recognition.utils.custom_types import JSONType
 from digit_recognition.utils.diagnostic_helpers import print_warn
 
@@ -52,6 +52,7 @@ class Layer:
         # inputs: (input_size, batch_size)
         return np.matmul(self.weights, inputs) + self.bias
 
+    @deprecated("No longer used due to lack of effectiveness in improving model performance")
     def intensify(self, scalar: float) -> None:
         """Scale all weights by a scalar. This can be used for hypermutants,
         immigrants or to give a layer more "oomph" (prediction confidence)."""
@@ -186,11 +187,7 @@ class DigitRecogniser:
     def mutate(self, rate: float) -> None:
         """Change one's configuration slightly"""
         for layer in self.layers:
-            # First, additive mutation
             layer.mutate(rate)
-            # Then, multiplicative mutation
-            if chance(SCALE_MUTATION_CHANCE):
-                layer.intensify(SCALE_MUTATION_FACTOR)
 
     def spawn_child_asexual(self, current_epoch: int, mutation_rate: float) -> DigitRecogniser:
         """Asexual reproduction. Return a slightly mutated version of oneself."""
@@ -234,7 +231,7 @@ class DigitRecogniser:
         Arrays are normalized to 0..1 so the UI can colour map easily.
         """
         layer0 = self.layers[0]
-        weights = layer0.weights  # shape (n, IMAGE_SIZE * IMAGE_SIZE)
+        weights = layer0.weights  # shape (n, image_size * image_size)
         imgs = weights.reshape(weights.shape[0], IMAGE_SIZE, IMAGE_SIZE)
 
         # normalize each image independently to 0..1 for display

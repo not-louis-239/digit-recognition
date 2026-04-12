@@ -3,7 +3,7 @@ from pathlib import Path
 
 from digit_recognition.utils.dirs import DIRS
 from digit_recognition.utils.custom_types import RawImagesType
-from ..utils.constants import IMAGE_SIZE
+from ..utils.config import IMAGE_SIZE
 from ..utils.diagnostic_helpers import print_warn
 
 def load_imgs_from_npy(data_path: Path) -> RawImagesType:

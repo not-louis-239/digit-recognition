@@ -24,16 +24,9 @@ from digit_recognition.utils.custom_types import OneHotType
 from .digit_recogniser import DigitRecogniser
 from ..utils import chance, clamp
 from ..utils.dirs import DIRS
-from ..utils.constants import (
+from ..utils.config import (
     POPULATION_SIZE,
     BASE_SELECTION_PRESSURE,
-    IMMIGRATION_RATE,
-    HYPERMUTATION_RATE,
-    CONFIDENCE_PENALTY_FACTOR,
-    SMALL_MARGIN_PENALTY_FACTOR,
-    TARGET_MARGIN,
-    HARDENING_EPOCH,
-    LOGIT_GAIN,
     calc_mutation_rate
 )
 from ..utils.seasons import get_year_and_season
@@ -106,19 +99,6 @@ class Simulation:
         # Categorical cross entropy loss is best for classification tasks.
         loss = -np.sum(targets * np.log(np.clip(preds, 1e-15, 1 - 1e-15))) / labels.size
 
-        # Confidence penalty: reward higher probability on the correct class
-        correct_probs = preds[labels, np.arange(labels.size)]
-        confidence_penalty = np.mean(1.0 - correct_probs)
-
-        # Margin penalty: reward a larger gap between top-1 and top-2 predictions
-        top2 = np.partition(preds, -2, axis=0)
-        top1 = top2[-1]
-        second = top2[-2]
-        margins = top1 - second
-        margin_penalty = np.mean(np.clip(TARGET_MARGIN - margins, 0.0, 1.0))
-
-        loss += CONFIDENCE_PENALTY_FACTOR * confidence_penalty
-        loss += SMALL_MARGIN_PENALTY_FACTOR * margin_penalty
         accuracy = np.mean(np.argmax(preds, axis=0) == labels)
 
         return Evaluation(loss=loss, accuracy_rate=accuracy, model=model)
@@ -211,15 +191,7 @@ class Simulation:
         new_generation = survivors.copy()
 
         while len(new_generation) < POPULATION_SIZE:
-            if self.epoch < HARDENING_EPOCH and chance(IMMIGRATION_RATE):
-                # Immigration: add an entirely new model
-                new = DigitRecogniser(epoch=self.epoch + 1, grace=20)
-            elif self.epoch < HARDENING_EPOCH and chance(HYPERMUTATION_RATE):
-                # Hypermutation: mutate an existing model by a lot more than usual
-                new = random.choice(survivors).copy()
-                new.grace = 20
-                new.mutate(rate=mutation_rate * 20)
-            elif len(survivors) >= 2 and chance(0.6):
+            if len(survivors) >= 2 and chance(0.6):
                 # Sexual reproduction: pick two survivors and mate them
                 parent_a, parent_b = random.sample(survivors, 2)
                 new = parent_a.spawn_child_sexual(parent_b, self.epoch + 1, mutation_rate)

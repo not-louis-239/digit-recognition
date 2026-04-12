@@ -13,9 +13,10 @@ COL_BLINK = "\033[5m"
 def col(code: int) -> str:
     return f"\033[38;5;{code}m"
 
-COL_ERROR = col(9)  # red
-COL_WARN = col(11)  # yellow
 COL_INFO = col(12)  # blue
+COL_WARN = col(11)  # yellow
+COL_ERROR = col(9)  # red
+COL_FATAL = col(1)  # deep red
 
 def print_info(s: str) -> None:
     print(f"{COL_INFO}info: {COL_RESET}{s}")
@@ -24,7 +25,7 @@ def print_warn(s: str) -> None:
 def print_err(s: str) -> None:
     print(f"{COL_ERROR}error: {COL_RESET}{s}")
 def print_fatal(s: str) -> None:
-    print(f"{COL_ERROR}fatal: {COL_RESET}{s}")
+    print(f"{COL_FATAL}fatal: {COL_RESET}{s}")
     sys.exit(1)
 
 def _show_palette():

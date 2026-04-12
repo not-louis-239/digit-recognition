@@ -6,7 +6,8 @@ import numpy as np
 from pygame import Surface
 
 from digit_recognition.utils.calculate_params import calculate_num_params
-from digit_recognition.utils.constants import WN_W, WN_H, BASE_SELECTION_PRESSURE, calc_mutation_rate, IMAGE_SIZE
+from digit_recognition.utils.constants import WN_W, WN_H
+from digit_recognition.utils.config import IMAGE_SIZE, calc_mutation_rate, BASE_SELECTION_PRESSURE
 from digit_recognition.gui.utils.text_utils import draw_text
 from digit_recognition.gui.utils.asset_manager import Assets
 from digit_recognition.gui.utils.buttons import Button, DEFAULT_BUTTON_FONT_FAMILY

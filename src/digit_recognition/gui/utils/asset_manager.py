@@ -111,7 +111,7 @@ class Assets:
             except Exception as e:
                 print_err(f"failed to load model from JSON file: {filepath}")
                 print_err(f"({type(e).__name__}: {e})")
-
+                continue
 
             perf = None
 
