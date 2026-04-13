@@ -4,10 +4,10 @@
     "epoch": 7999,
     "name": "victor1.0.0:13k",
     "common_name": "Victor-13k",
-    "last_updated": "2026_04_11",
+    "last_updated": "2026_04_13",
     "activation": "sigmoid",
     "files": [
-        "epoch_7999__rank_10__loss_0_3987.json"
+        "epoch_7999__rank_1__loss_0_3987.json"
     ],
     "notes": "First model to break 96% accuracy on the training set."
 }
