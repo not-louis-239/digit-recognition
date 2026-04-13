@@ -181,9 +181,7 @@ class Simulation:
         # Selection
         num_survivors: int = int(clamp(POPULATION_SIZE // selection_pressure, (1, len_population)))
 
-        elite = [e.model for e in results[:num_survivors]]
-        protected = [e.model for e in results if e.model.grace > 0]
-        survivors = list({*elite, *protected})
+        survivors = [e.model for e in results[:num_survivors]]
 
         print(f"Found {len(survivors)} survivors.")
 
@@ -202,10 +200,6 @@ class Simulation:
             new_generation.append(new)
 
         self.population = new_generation
-
-        # Decrement grace counters for all survivors
-        for individual in self.population:
-            individual.grace = max(0, individual.grace - 1)
 
         self.epoch += 1
 

@@ -385,11 +385,10 @@ class SimState(State):
             # Show population composition: elites, protected
             # TODO: eventually we'd want this to be retrieved, not computed, but it is not a major problem as it is relatively cheap on the CPU
             elites_count = clamp(int(population_size // max(1e-12, selection_pressure)), (1, population_size))  # using epsilon minimum to prevent ZeroDivisionError
-            protected_count = sum(1 for model in self.sim.population if model.grace > 0)
 
             draw_text(
                 surface=wn, pos=(self.padding, left_items_start_y + 180), horiz_align='left', vert_align='top',
-                text=f"Elites: {elites_count} | Protected: {protected_count}", colour=(220, 220, 220),
+                text=f"Elites: {elites_count}", colour=(220, 220, 220),
                 font_profile=(self.assets.monospaced_reg, 22)
             )
 

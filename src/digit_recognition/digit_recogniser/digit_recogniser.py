@@ -92,7 +92,6 @@ class DigitRecogniser:
         ]
 
         self.epoch = epoch  # purely cosmetic, but nice to keep track of
-        self.grace = grace  # determines number of "safety" generations where it can't be culled
 
         # Reproduction type is only assigned for perf testing.
         self.reproduction_type: Reproduction = Reproduction.NONE
@@ -131,7 +130,6 @@ class DigitRecogniser:
 
         # Metadata
         model.epoch = data["metadata"]["epoch"]
-        model.grace = 0  # models aren't automatically invincible upon reload
         model.reproduction_type = Reproduction.NONE
 
         return model
@@ -150,7 +148,6 @@ class DigitRecogniser:
 
         # Copy metadata
         new_model.epoch = self.epoch
-        new_model.grace = self.grace if preserve_grace else 0
         new_model.reproduction_type = Reproduction.NONE
 
         return new_model
