@@ -59,21 +59,16 @@ class GalleryState(State):
             assets.test_data
         ]
 
-        self.view_idx = 0
-        self.is_drawing_mode: bool = False
-        self.show_number_balance: bool = False
-        self.active_digit: int = 0
+        self.last_model_pred: np.ndarray | None = None
+        self.model_idx = 0
         self.sim = sim
 
         self.reset()
 
     def reset(self) -> None:
         self.canvas.clear()
-
-        # Update view of best model (assuming Simulation.run_generation() was called)
-        best = self.sim.get_best_models(1)[0]
-        best = self.assets.model_wrappers[0].model
-        self.best_model = best
+        self.last_model_pred = None
+        self.notif.clear()
 
     def update(self, dt_s: float) -> None:
         pass
@@ -82,13 +77,22 @@ class GalleryState(State):
         if self.return_button.check_click(input_manager.events):
             return StateChangeRequest(new=StateID.TITLE)
 
-        if input_manager.went_down(pg.K_b):
-            self.show_number_balance = not self.show_number_balance
+        # Clear canvas
         if input_manager.went_down(pg.K_BACKSPACE):
-            if self.is_drawing_mode:
-                self.canvas.clear()
+            self.last_model_pred = None
+            self.canvas.clear()
+
+        # Change model
+        if input_manager.went_down(pg.K_e):
+            self.last_model_pred = None
+            self.model_idx = (self.model_idx + 1) % len(self.assets.model_wrappers)
+
+        # Predict
         if input_manager.went_down(pg.K_SPACE):
-            self.model_prediction = self.best_model.predict(self.canvas.as_array())
+            if self.canvas.is_empty():
+                self.notif.set_msg(text="Canvas is insufficiently filled.", colour=(255, 200, 100), lifetime_s=2)
+            else:
+                self.last_model_pred = self.assets.model_wrappers[self.model_idx].model.predict(self.canvas.as_array())
 
         if input_manager.mouse_is_down(MouseButton.LMB):
             mouse_pos = pg.mouse.get_pos()
@@ -97,6 +101,8 @@ class GalleryState(State):
 
             if (canvas_topleft[0] <= mouse_pos[0] <= canvas_botright[0] and
                 canvas_topleft[1] <= mouse_pos[1] <= canvas_botright[1]):
+                self.last_model_pred = None  # doesn't apply once canvas is edited
+
                 # Map mouse position to canvas coordinates
                 canvas_coord = map_coordinate(
                     coord_in=mouse_pos,
@@ -119,13 +125,70 @@ class GalleryState(State):
         self.canvas.draw(wn, tile_size_px=CANVAS_PIXEL_SIZE, start_pos=(self.ui_padding, self.ui_padding))
         self.return_button.draw(wn)
 
-        # TODO: replace hasattr usage with different algorithm
-        if hasattr(self, "model_prediction"):
-            text_start_x = 2 * self.ui_padding + self.canvas.width * CANVAS_PIXEL_SIZE
-            text_start_y = self.ui_padding
-            last_pred = np.argmax(self.model_prediction)
+        # Show the model being used
+        text_start_x = 2 * self.ui_padding + CANVAS_SIZE
+        text_start_y = self.ui_padding
+
+        draw_text(
+            surface=wn, pos=(text_start_x, text_start_y), horiz_align='left', vert_align='top',
+            text=f"Using Model: {self.assets.model_wrappers[self.model_idx].common_name} ({self.model_idx + 1} / {len(self.assets.model_wrappers)})",
+            colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 22)
+        )
+
+        # Show last prediction
+        if self.last_model_pred is not None:
+            last_pred = np.argmax(self.last_model_pred)
 
             draw_text(
-                surface=wn, pos=(text_start_x, text_start_y), horiz_align='left', vert_align='top',
-                text=f"Predicted label: {last_pred}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 18)
+                surface=wn, pos=(text_start_x, text_start_y + 30), horiz_align='left', vert_align='top',
+                text=f"Predicted label: {last_pred}", colour=(220, 220, 220), font_profile=(self.assets.monospaced_reg, 22)
             )
+
+            # Draw bar graph
+            text_start_y += 30
+            bar_graph_left_x = text_start_x
+            bar_graph_top_y = text_start_y + self.ui_padding + 30
+            bar_graph_height = 240
+            bar_width = 120
+
+            half_bar_gap = 4
+            bar_height = (bar_graph_height / 10)
+
+            for i in range(10):
+                colour = (100, 220, 255) if i == last_pred else (130, 130, 130)
+
+                entry_top_y = int(bar_graph_top_y + i * bar_height)
+                pred = self.last_model_pred[i]
+
+                draw_text(
+                    surface=wn, pos=(bar_graph_left_x, entry_top_y + int(bar_height / 2 - half_bar_gap)),
+                    horiz_align='left', vert_align='centre', text=f"{i}: {pred:.4f}",
+                    colour=colour, font_profile=(self.assets.monospaced_reg, 22)
+                )
+
+                pg.draw.rect(wn, (0, 0, 0), (bar_graph_left_x + 135, entry_top_y + half_bar_gap, bar_width, bar_height - 2 * half_bar_gap))
+                pg.draw.rect(wn, colour, (bar_graph_left_x + 135, entry_top_y + half_bar_gap, int(bar_width * pred), bar_height - 2 * half_bar_gap))
+
+        # Show notifications
+        draw_text(
+            wn, (2 * self.ui_padding + CANVAS_SIZE, WN_H - self.ui_padding - 120), 'left', 'bottom',
+            self.notif.text, colour=self.notif.colour, font_profile=(self.assets.monospaced_reg, 22)
+        )
+
+        # Show instructions
+        draw_text(
+            wn, (2 * self.ui_padding + CANVAS_SIZE, WN_H - self.ui_padding - 90), 'left', 'bottom',
+            "Backspace/Delete - Clear", colour=(255, 255, 255), font_profile=(self.assets.monospaced_reg, 22)
+        )
+        draw_text(
+            wn, (2 * self.ui_padding + CANVAS_SIZE, WN_H - self.ui_padding - 60), 'left', 'bottom',
+            "Left-Click - Draw", colour=(255, 255, 255), font_profile=(self.assets.monospaced_reg, 22)
+        )
+        draw_text(
+            wn, (2 * self.ui_padding + CANVAS_SIZE, WN_H - self.ui_padding - 30), 'left', 'bottom',
+            "Space - See Prediction", colour=(255, 255, 255), font_profile=(self.assets.monospaced_reg, 22)
+        )
+        draw_text(
+            wn, (2 * self.ui_padding + CANVAS_SIZE, WN_H - self.ui_padding), 'left', 'bottom',
+            "E - Change Model", colour=(255, 255, 255), font_profile=(self.assets.monospaced_reg, 22)
+        )

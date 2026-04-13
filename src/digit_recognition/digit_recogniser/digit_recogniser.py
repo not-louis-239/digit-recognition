@@ -106,11 +106,11 @@ class DigitRecogniser:
             })
 
         return {
-            "layers": serializable_layers,
             "metadata": {
                 "architecture": list(self.shape()),
                 "epoch": self.epoch
-            }
+            },
+            "layers": serializable_layers
         }
 
     @classmethod

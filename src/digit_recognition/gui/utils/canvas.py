@@ -2,8 +2,7 @@ import pygame as pg
 from pygame import Surface
 import numpy as np
 
-from digit_recognition.utils.custom_types import TrainingDataType
-
+from digit_recognition.utils.constants import NOISE_EPSILON
 
 
 class Canvas:
@@ -26,6 +25,10 @@ class Canvas:
             return
 
         raise IndexError(f"Canvas.__setitem__ takes a tuple of ints (x, y), not {i}")
+
+    def is_empty(self) -> bool:
+        sum_pixels = sum(cell for row in self.cells for cell in row)
+        return sum_pixels < NOISE_EPSILON
 
     def clear(self) -> None:
         for y in range(self.height):
