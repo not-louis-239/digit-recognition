@@ -13,7 +13,7 @@ FontProfile: TypeAlias = tuple[Path | None, int]  # (family, size)
 # arrays must be of size (IMAGE_SIZE, IMAGE_SIZE), with an attached label for the correct digit
 RawImagesType: TypeAlias = list[tuple[np.ndarray, int]]
 
-OneHotTuple: TypeAlias = tuple[np.ndarray, int, np.ndarray]
-OneHotType: TypeAlias = list[OneHotTuple]  # (image, correct_digit, one_hot_array)
+TrainingDataTuple: TypeAlias = tuple[np.ndarray, int, np.ndarray]
+TrainingDataType: TypeAlias = list[TrainingDataTuple]  # (image, correct_digit, one_hot_array)
 
 JSONType: TypeAlias = dict[str, Any]

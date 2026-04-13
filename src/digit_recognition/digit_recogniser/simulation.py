@@ -20,7 +20,7 @@ import json
 
 import numpy as np
 
-from digit_recognition.utils.custom_types import OneHotType
+from digit_recognition.utils.custom_types import TrainingDataType
 from .digit_recogniser import DigitRecogniser
 from ..utils import chance, clamp
 from ..utils.dirs import DIRS
@@ -76,7 +76,7 @@ class Simulation:
 
         self.year, self.season = get_year_and_season(self.epoch)
 
-    def evaluate_model(self, model: DigitRecogniser, data: OneHotType) -> Evaluation:
+    def evaluate_model(self, model: DigitRecogniser, data: TrainingDataType) -> Evaluation:
         """Returns Evaluation object containing loss and accuracy rate. `data` is tuple[img, label, one_hot]
         Not deprecated as it is used to assign evaluations to models loaded from disk, which is only done once per model.
         Not for use in training, use evaluate_models_batch() instead."""
@@ -103,7 +103,7 @@ class Simulation:
 
         return Evaluation(loss=loss, accuracy_rate=accuracy, model=model)
 
-    def _prepare_cached_data(self, data: OneHotType) -> None:
+    def _prepare_cached_data(self, data: TrainingDataType) -> None:
         """Cache the training dataset as NumPy arrays."""
         data_id = id(data)
         if self._cached_training_data_id == data_id:
@@ -116,7 +116,7 @@ class Simulation:
         self._cached_labels = labels
         self._cached_training_data_id = data_id
 
-    def evaluate_models_batch(self, models: list[DigitRecogniser], data: OneHotType) -> tuple[np.ndarray, np.ndarray]:
+    def evaluate_models_batch(self, models: list[DigitRecogniser], data: TrainingDataType) -> tuple[np.ndarray, np.ndarray]:
         """Batched evaluation of all models for speed. Returns (losses, accuracies) arrays."""
         self._prepare_cached_data(data)
 
@@ -148,7 +148,7 @@ class Simulation:
 
         return loss, acc
 
-    def run_generation(self, one_hots: OneHotType) -> None:
+    def run_generation(self, one_hots: TrainingDataType) -> None:
         """
         Run a generation. Takes training data in the form of list[tuple[image, correct_digit, one_hot]]
         Eliminate all but the best individuals, then have the best

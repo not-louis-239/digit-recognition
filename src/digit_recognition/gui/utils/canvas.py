@@ -2,7 +2,7 @@ import pygame as pg
 from pygame import Surface
 import numpy as np
 
-from digit_recognition.utils.custom_types import OneHotType
+from digit_recognition.utils.custom_types import TrainingDataType
 
 
 

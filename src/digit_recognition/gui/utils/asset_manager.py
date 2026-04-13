@@ -6,7 +6,7 @@ import numpy as np
 
 from ...utils.dirs import DIRS
 from ...digit_recogniser.image_manager import load_imgs_from_npy
-from ...utils.custom_types import RawImagesType, OneHotType
+from ...utils.custom_types import RawImagesType, TrainingDataType
 from ...digit_recogniser.simulation import Evaluation, Simulation
 from ...digit_recogniser.digit_recogniser import DigitRecogniser
 from ...utils.diagnostic_helpers import print_warn, print_info, print_err
@@ -30,7 +30,7 @@ class DigitRecogniserWrapper:
             return self.perf.accuracy_rate
         return None
 
-def assign_evals(wrappers_list: list[DigitRecogniserWrapper], sim: Simulation, data: OneHotType) -> None:
+def assign_evals(wrappers_list: list[DigitRecogniserWrapper], sim: Simulation, data: TrainingDataType) -> None:
     """Needs a Simulation instance to evaluate models to avoid a potential circular reference."""
     for wrapper in wrappers_list:
         if wrapper.perf is None:
@@ -42,9 +42,9 @@ class Assets:
         self.monospaced_reg: Path = (DIRS.assets.fonts / "SourceCodePro-Medium.ttf").path()
 
         # Cache one_hots to improve performance. Tuples are (image, correct_digit, one_hot_array)
-        self.training_data: OneHotType = self._training_data_to_one_hots(load_imgs_from_npy((DIRS.assets.training_data / "digits_training.npy").path()))
-        self.dev_data: OneHotType = self._training_data_to_one_hots(load_imgs_from_npy((DIRS.assets.training_data / "digits_dev.npy").path()))
-        self.test_data: OneHotType = self._training_data_to_one_hots(load_imgs_from_npy((DIRS.assets.training_data / "digits_test.npy").path()))
+        self.training_data: TrainingDataType = self._training_data_to_one_hots(load_imgs_from_npy((DIRS.assets.training_data / "digits_training.npy").path()))
+        self.dev_data: TrainingDataType = self._training_data_to_one_hots(load_imgs_from_npy((DIRS.assets.training_data / "digits_dev.npy").path()))
+        self.test_data: TrainingDataType = self._training_data_to_one_hots(load_imgs_from_npy((DIRS.assets.training_data / "digits_test.npy").path()))
 
         # Get models
         self.model_wrappers: list[DigitRecogniserWrapper] = []
@@ -119,7 +119,7 @@ class Assets:
             self.model_wrappers.append(wrapper)
             print_info(f"successfully loaded model: {name} (common name: {common_name})")
 
-    def _training_data_to_one_hots(self, data: RawImagesType) -> OneHotType:
+    def _training_data_to_one_hots(self, data: RawImagesType) -> TrainingDataType:
         one_hots = []
         for image, correct_digit in data:
             one_hot = np.zeros((10, 1))
